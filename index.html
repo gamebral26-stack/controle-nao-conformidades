@@ -1,0 +1,2512 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1E3A5F">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Controle de Não Conformidades — Produção 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+  :root {
+    --navy: #1E3A5F;
+    --navy-dark: #142842;
+    --blue: #2B6CB0;
+    --accent: #3182CE;
+    --bg: #F1F5F9;
+    --card: #FFFFFF;
+    --border: #CBD5E1;
+    --text: #0F172A;
+    --muted: #64748B;
+    --gray-bg: #E2E8F0; --gray-tx: #334155;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+  body { background: var(--bg); color: var(--text); overflow-x: hidden; }
+
+  /* Header */
+  header {
+    background: var(--navy);
+    color: #fff;
+    padding: 14px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+  header h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.3px; }
+  header p { font-size: 0.8rem; color: #CBD5E1; }
+  .header-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #2563EB; }
+  .btn-success { background: #15803D; color: #fff; }
+  .btn-success:hover { background: #166534; }
+  .btn-warn { background: #FEF3C7; color: #92400E; border: 1px solid #F59E0B; }
+  .btn-warn:hover { background: #FDE68A; }
+  .btn-warn.active-filter { background: #D97706; color: #fff; border-color: #B45309; }
+  .btn-outline { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25); }
+  .btn-outline:hover { background: rgba(255,255,255,0.22); }
+  .btn-secondary { background: #E2E8F0; color: var(--text); }
+  .btn-secondary:hover { background: #CBD5E1; }
+  .btn-danger { background: #DC2626; color: #fff; padding: 4px 8px; font-size: 0.78rem; }
+  .btn-edit { background: #2563EB; color: #fff; padding: 4px 8px; font-size: 0.78rem; }
+
+  /* Tabs */
+  .tabs {
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .tab-btn {
+    background: transparent;
+    color: var(--muted);
+    border-radius: 0;
+    padding: 12px 18px;
+    border-bottom: 3px solid transparent;
+    font-size: 0.9rem;
+  }
+  .tab-btn.active {
+    color: var(--navy);
+    border-bottom-color: var(--navy);
+  }
+
+  .container { max-width: 1440px; margin: 0 auto; padding: 20px 24px; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* Filter Bar */
+  .filter-bar {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+    gap: 12px;
+    align-items: end;
+  }
+  .field label { display: block; font-size: 0.75rem; font-weight: 700; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; }
+  .field input, .field select, .field textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.88rem;
+    background: #fff;
+    color: var(--text);
+  }
+  .field input:focus, .field select:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+  /* Import Box in Lançamentos */
+  .import-panel {
+    background: #F8FAFC;
+    border: 1px dashed #94A3B8;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .import-info h3 { font-size: 0.95rem; color: var(--navy); margin-bottom: 3px; }
+  .import-info p { font-size: 0.8rem; color: var(--muted); }
+  .import-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .import-controls select {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.84rem;
+    background: #fff;
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* KPI Grid */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .kpi-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--navy);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .kpi-card.warn { border-left-color: #D97706; }
+  .kpi-card.danger { border-left-color: #DC2626; }
+  .kpi-card.blue { border-left-color: #2B6CB0; }
+  .kpi-lbl { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+  .kpi-val { font-size: 1.65rem; font-weight: 800; color: var(--navy); margin-top: 4px; }
+  .kpi-sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+  /* Charts Grid */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 960px) { .charts-grid { grid-template-columns: 1fr; } }
+  .chart-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .chart-box.full-span {
+    grid-column: 1 / -1;
+  }
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .chart-header h3 { font-size: 0.92rem; color: var(--navy); font-weight: 700; margin: 0; }
+  .chart-type-sel {
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--navy);
+    background: #F8FAFC;
+    cursor: pointer;
+  }
+  .chart-wrap { position: relative; height: 300px; }
+
+  /* Matrix Table Styling */
+  .matrix-cell-zero { color: #CBD5E1; text-align: center; }
+  .matrix-cell-val { text-align: center; font-weight: 700; border-radius: 4px; }
+  .matrix-header-sub { font-size: 0.72rem; font-weight: 400; color: #CBD5E1; display: block; }
+
+  /* Form Card */
+  .form-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .form-card h2 { font-size: 1.05rem; color: var(--navy); margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 12px;
+  }
+  .form-actions { margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .draft-panel {
+    margin-top: 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .draft-panel-header {
+    padding: 10px 12px;
+    background: #F8FAFC;
+    border-bottom: 1px solid var(--border);
+    font-weight: 700;
+    color: var(--navy);
+  }
+  .draft-panel table { min-width: 900px; }
+
+  /* Cadastros Grid */
+  .cadastros-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+  }
+  .list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    border-bottom: 1px solid #E2E8F0;
+    font-size: 0.85rem;
+  }
+
+  /* Table */
+  .table-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .table-header {
+    padding: 12px 16px;
+    background: #F8FAFC;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .table-stats {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .stat-pill {
+    background: #E0E7FF;
+    color: var(--navy);
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .table-scroll { overflow-x: auto; max-height: 560px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+  th {
+    background: var(--navy);
+    color: #fff;
+    text-align: left;
+    padding: 10px 10px;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    white-space: nowrap;
+  }
+  td { padding: 8px 10px; border-bottom: 1px solid #E2E8F0; vertical-align: middle; }
+  tr:nth-child(even) { background: #F8FAFC; }
+  tr:hover { background: #EFF6FF; }
+  tr.row-incomplete { background: #FFFBEB !important; }
+
+  /* Print Styles for Executive Report */
+  @media print {
+    header .header-actions, .tabs, .filter-bar, .no-print, .chart-type-sel { display: none !important; }
+    body { background: #fff; }
+    .container { padding: 0; max-width: 100%; }
+    .view { display: block !important; }
+    #view-lancamentos, #view-producao, #view-cadastros { display: none !important; }
+    .chart-box, .kpi-card, .table-card { break-inside: avoid; border: 1px solid #94A3B8; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>CONTROLE DE NÃO CONFORMIDADES — PRODUÇÃO 2026</h1>
+    <p>Lançamento Operacional &amp; Dashboard Gerencial Interativo</p>
+  </div>
+  <div class="header-actions">
+    <button class="btn-outline" onclick="document.getElementById('fileImport').click()">📥 Importar Excel (.xlsx)</button>
+    <input type="file" id="fileImport" accept=".xlsx,.xls,.csv" style="display:none" onchange="importExcel(event)">
+    <button class="btn-success" onclick="exportExcel()">📤 Exportar Excel</button>
+    <button class="btn-outline" onclick="exportSelfContainedHTML()" title="Baixa uma cópia deste painel já com todos os seus lançamentos, cadastros e produção salvos dentro dele">💾 Salvar Cópia p/ Enviar (.html)</button>
+    <button class="btn-outline" onclick="exportBackup()">🛡️ Backup (.json)</button>
+    <button class="btn-outline" onclick="document.getElementById('backupImport').click()">↩️ Restaurar / Mesclar</button>
+    <input type="file" id="backupImport" accept=".json,application/json" style="display:none" onchange="importBackup(event)">
+    <button class="btn-outline" onclick="installApp()">📲 Instalar no Celular</button>
+    <button class="btn-primary" onclick="window.print()">🖨️ Imprimir / PDF Diretoria</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" id="tab-dashboard" onclick="switchTab('dashboard')">📊 Relatório Interativo (Diretoria)</button>
+  <button class="tab-btn" id="tab-lancamentos" onclick="switchTab('lancamentos')">➕ Novo Lançamento &amp; Base (<span id="count-badge">0</span>)</button>
+  <button class="tab-btn" id="tab-producao" onclick="switchTab('producao')">⚙️ Produção Mensal (% NC)</button>
+  <button class="tab-btn" id="tab-cadastros" onclick="switchTab('cadastros')">📋 Cadastros (Produtos / Setores / Motivos)</button>
+</div>
+
+<div class="container">
+
+  <!-- ==================== VIEW 1: DASHBOARD INTERATIVO ==================== -->
+  <div id="view-dashboard" class="view active">
+    <div class="import-panel" id="empty-base-notice" style="display:none;">
+      <div class="import-info">
+        <h3>Primeiro uso deste app?</h3>
+        <p>Restaure o arquivo da base inicial ou importe uma planilha para começar. A base fica salva neste aparelho.</p>
+      </div>
+      <button class="btn-primary" onclick="document.getElementById('backupImport').click()">Restaurar base inicial</button>
+    </div>
+    <div class="filter-bar">
+      <div class="field">
+        <label>Período (Mês)</label>
+        <select id="flt-periodo" onchange="renderDashboard()">
+          <option value="TODOS">Todos os Meses (2026)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Produto / Modelo</label>
+        <select id="flt-produto" onchange="renderDashboard()">
+          <option value="TODOS">Todos os Produtos</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Setor Origem</label>
+        <select id="flt-setor" onchange="renderDashboard()">
+          <option value="TODOS">Todos os Setores</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Setor Ocorrência (Detecção)</label>
+        <select id="flt-setor-ocorrencia" onchange="renderDashboard()">
+          <option value="TODOS">Todos os Setores</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Motivo</label>
+        <select id="flt-motivo" onchange="renderDashboard()">
+          <option value="TODOS">Todos os Motivos</option>
+        </select>
+      </div>
+      <div class="field">
+        <button class="btn-secondary" style="width:100%; justify-content:center;" onclick="resetFilters()">Limpar Filtros</button>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-lbl">Peças Não Conformes</div>
+        <div class="kpi-val" id="kpi-pecas">0</div>
+        <div class="kpi-sub" id="kpi-registros">0 registros filtrados</div>
+      </div>
+      <div class="kpi-card danger">
+        <div class="kpi-lbl">Setor Mais Crítico (Origem)</div>
+        <div class="kpi-val" id="kpi-setor" style="font-size:1.3rem;">—</div>
+        <div class="kpi-sub" id="kpi-setor-sub">0 peças</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-lbl">Principal Motivo (Pareto)</div>
+        <div class="kpi-val" id="kpi-motivo" style="font-size:1.15rem;">—</div>
+        <div class="kpi-sub" id="kpi-motivo-sub">0 peças</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-lbl">Produto Mais Afetado</div>
+        <div class="kpi-val" id="kpi-produto" style="font-size:1.05rem;">—</div>
+        <div class="kpi-sub" id="kpi-produto-sub">0 peças</div>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <!-- Gráfico 1 -->
+      <div class="chart-box">
+        <div class="chart-header">
+          <h3>1. Não Conformidades por Setor Origem</h3>
+          <select id="type-chartSetor" class="chart-type-sel" onchange="renderDashboard()">
+            <option value="bar-h">Barras Horizontais</option>
+            <option value="bar-v">Colunas Verticais</option>
+            <option value="doughnut">Rosca (Proporção %)</option>
+            <option value="pie">Pizza (Proporção %)</option>
+            <option value="polarArea">Área Polar</option>
+          </select>
+        </div>
+        <div class="chart-wrap"><canvas id="chartSetor"></canvas></div>
+      </div>
+
+      <!-- Gráfico 2: Pareto com Curva Acumulada 80/20 -->
+      <div class="chart-box full-span">
+        <div class="chart-header">
+          <h3>2. Pareto de Motivos (Barras + Curva Acumulada %)</h3>
+          <select id="type-chartMotivo" class="chart-type-sel" onchange="renderDashboard()">
+            <option value="pareto">Pareto Clássico (Colunas + Linha %)</option>
+            <option value="bar-h">Barras Horizontais (Simples)</option>
+            <option value="doughnut">Rosca (Proporção %)</option>
+            <option value="pie">Pizza (Proporção %)</option>
+          </select>
+        </div>
+        <div class="chart-wrap" style="height:360px;"><canvas id="chartMotivo"></canvas></div>
+      </div>
+
+      <!-- Gráfico 3 -->
+      <div class="chart-box">
+        <div class="chart-header">
+          <h3>3. Top 8 Produtos / Modelos com Maior Incidência</h3>
+          <select id="type-chartProduto" class="chart-type-sel" onchange="renderDashboard()">
+            <option value="bar-h">Barras Horizontais</option>
+            <option value="bar-v">Colunas Verticais</option>
+            <option value="doughnut">Rosca (Proporção %)</option>
+            <option value="pie">Pizza (Proporção %)</option>
+          </select>
+        </div>
+        <div class="chart-wrap"><canvas id="chartProduto"></canvas></div>
+      </div>
+
+      <!-- Gráfico 4 -->
+      <div class="chart-box">
+        <div class="chart-header">
+          <h3>4. Evolução Mensal de Não Conformidades</h3>
+          <select id="type-chartMensal" class="chart-type-sel" onchange="renderDashboard()">
+            <option value="bar-v">Colunas Verticais</option>
+            <option value="line">Linha de Tendência</option>
+            <option value="area">Área Preenchida</option>
+            <option value="combo-taxa">Colunas + Linha % NC s/ Produção</option>
+          </select>
+        </div>
+        <div class="chart-wrap"><canvas id="chartMensal"></canvas></div>
+      </div>
+
+      <!-- Gráfico 5: Setor Origem vs Setor Ocorrência -->
+      <div class="chart-box full-span">
+        <div class="chart-header">
+          <h3>5. Setor Origem × Setor Onde Ocorreu o Erro (Detecção)</h3>
+          <select id="type-chartCruzado" class="chart-type-sel" onchange="renderDashboard()">
+            <option value="stacked">Barras Empilhadas (Origem × Detecção)</option>
+            <option value="grouped">Barras Agrupadas (Origem × Detecção)</option>
+            <option value="bar-deteccao">Ranking Setor Onde Ocorreu (Detecção)</option>
+          </select>
+        </div>
+        <div class="chart-wrap" style="height:310px;"><canvas id="chartCruzado"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Matriz Cruzada Setor Origem x Setor Ocorrência -->
+    <div class="table-card">
+      <div class="table-header">
+        <strong style="color:var(--navy);">Matriz Cruzada: Setor Origem (Linhas) × Setor Onde Ocorreu o Erro (Colunas)</strong>
+        <span style="font-size:0.78rem; color:var(--muted);">Mostra onde o problema nasceu vs. onde foi detectado (em nº de peças)</span>
+      </div>
+      <div class="table-scroll" style="max-height:380px;">
+        <table id="table-matriz">
+          <thead id="thead-matriz"></thead>
+          <tbody id="tbody-matriz"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Resumo por Setor na tela do Dashboard -->
+    <div class="table-card">
+      <div class="table-header">
+        <strong style="color:var(--navy);">Resumo Consolidado por Setor Origem (Filtro Atual)</strong>
+        <span style="font-size:0.8rem; color:var(--muted);">Clique em "Novo Lançamento &amp; Base" acima para registrar ou editar ocorrências</span>
+      </div>
+      <div class="table-scroll" style="max-height:320px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Setor Origem</th>
+              <th style="text-align:right;">Ocorrências</th>
+              <th style="text-align:right;">Qtde Peças NC</th>
+              <th style="text-align:right;">% Participação</th>
+              <th>Principal Motivo no Setor</th>
+              <th>Onde Mais Foi Detectado</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-resumo-setor"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== VIEW 2: LANÇAMENTOS ==================== -->
+  <div id="view-lancamentos" class="view">
+    <!-- Formulário de Lançamento -->
+    <div class="form-card">
+      <h2 id="form-title">Registrar Nova Não Conformidade</h2>
+      <input type="hidden" id="edit-id" value="">
+      <div class="form-grid">
+        <div class="field">
+          <label>Número do Lançamento</label>
+          <input type="number" id="inp-lancamento" min="1" readonly="">
+        </div>
+        <div class="field">
+          <label>Data da Ocorrência *</label>
+          <input type="date" id="inp-data" required="" onchange="updateLaunchNumberPreview()">
+        </div>
+        <div class="field">
+          <label>Produto / Modelo *</label>
+          <input type="text" id="inp-produto" list="dl-produtos" placeholder="Digite ou selecione o produto..." required="">
+          <datalist id="dl-produtos"></datalist>
+        </div>
+        <div class="field">
+          <label>Quantidade de Peças *</label>
+          <input type="number" id="inp-qtde" min="1" value="1" required="">
+        </div>
+        <div class="field">
+          <label>Setor Origem</label>
+          <select id="inp-setor"></select>
+        </div>
+        <div class="field">
+          <label>Setor Onde Ocorreu o Erro</label>
+          <select id="inp-setor-ocorrencia"></select>
+        </div>
+        <div class="field">
+          <label>Motivo da Não Conformidade *</label>
+          <select id="inp-motivo"></select>
+        </div>
+        <div class="field">
+          <label>Peça / Componente</label>
+          <input type="text" id="inp-peca" placeholder="Ex: Porta, Lateral Esq., Frente Gaveta...">
+        </div>
+        <div class="field" style="grid-column: span 2;">
+          <label>Observações</label>
+          <input type="text" id="inp-obs" placeholder="Detalhes adicionais, dúvida de fornecedor, etc.">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-secondary" id="btn-add-item" onclick="addDraftItem()">➕ Adicionar Item à Ocorrência</button>
+        <button class="btn-primary" onclick="saveRecord()">💾 Salvar Ocorrência</button>
+        <button class="btn-secondary" onclick="clearForm()">Limpar Campos</button>
+      </div>
+      <div class="draft-panel" id="draft-panel" style="display:none;">
+        <div class="draft-panel-header">
+          Itens preparados nesta ocorrência (<span id="draft-count">0</span>)
+        </div>
+        <div class="table-scroll" style="max-height:260px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Data</th>
+                <th>Produto</th>
+                <th>Qtde</th>
+                <th>Setor Causador</th>
+                <th>Setor Ocorrência</th>
+                <th>Motivo</th>
+                <th>Peça</th>
+                <th>Observações</th>
+                <th class="no-print">Ação</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-draft-items"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Painel Dedicado de Importação Excel -->
+    <div class="import-panel">
+      <div class="import-info">
+        <h3>📥 Importar Dados de Planilha Excel (.xlsx / .xls)</h3>
+        <p>Colunas aceitas: <strong>DATA, PRODUTO, QTDE, SETOR, SETOR OCORRÊNCIA, MOTIVO, PEÇA / COMPONENTE, OBSERVAÇÕES</strong>.</p>
+        <p>O OCR da foto é processado no aparelho; a primeira leitura pode precisar de internet para carregar o mecanismo.</p>
+      </div>
+      <div class="import-controls">
+        <select id="import-mode" title="Escolha o que fazer com os dados atuais ao importar">
+          <option value="append">➕ Adicionar à base atual (Mesclar)</option>
+          <option value="replace">🔄 Substituir toda a base atual</option>
+        </select>
+        <button class="btn-success" onclick="document.getElementById('fileImport').click()">📂 Selecionar Arquivo Excel</button>
+        <button class="btn-primary" onclick="document.getElementById('photoImport').click()">📷 Importar Foto (OCR)</button>
+        <input type="file" id="photoImport" accept="image/*" style="display:none" onchange="importPhoto(event)">
+        <button class="btn-secondary" onclick="downloadExcelTemplate()" title="Baixa uma planilha modelo pronta para preencher">📄 Baixar Modelo (.xlsx)</button>
+      </div>
+    </div>
+
+    <div class="form-card" id="ocr-review" style="display:none;">
+      <h2>Revisar dados reconhecidos da foto</h2>
+      <p style="font-size:0.85rem; color:var(--muted); margin-bottom:12px;">Confira e edite os campos antes de adicionar à base. O reconhecimento é feito neste aparelho.</p>
+      <div id="ocr-status" role="status" style="margin-bottom:10px;"></div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Data</th><th>Produto</th><th>Qtde</th><th>Setor</th><th>Setor ocorrência</th><th>Motivo</th><th>Peça</th><th>Observações</th></tr></thead>
+          <tbody id="tbody-ocr-review"></tbody>
+        </table>
+      </div>
+      <div class="form-actions">
+        <button class="btn-success" id="btn-accept-ocr" onclick="acceptOcrRows()">✅ Adicionar dados revisados</button>
+        <button class="btn-secondary" onclick="cancelOcrReview()">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- Barra de Filtros Personalizados para Exibição -->
+    <div class="filter-bar" style="margin-bottom: 14px;">
+      <div class="field">
+        <label>Período (Mês)</label>
+        <select id="lanc-flt-periodo" onchange="renderTable()">
+          <option value="TODOS">Todos os Meses</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Número do Lançamento</label>
+        <input type="number" id="lanc-flt-lancamento" min="1" step="1" placeholder="Ex.: 232" oninput="renderTable()">
+      </div>
+      <div class="field">
+        <label>Data Inicial (De)</label>
+        <input type="date" id="lanc-flt-data-ini" onchange="renderTable()">
+      </div>
+      <div class="field">
+        <label>Data Final (Até)</label>
+        <input type="date" id="lanc-flt-data-fim" onchange="renderTable()">
+      </div>
+      <div class="field">
+        <label>Produto / Modelo</label>
+        <select id="lanc-flt-produto" onchange="renderTable()">
+          <option value="TODOS">Todos os Produtos</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Setor Causador</label>
+        <select id="lanc-flt-setor" onchange="renderTable()">
+          <option value="TODOS">Todos os Setores</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Setor Onde Ocorreu</label>
+        <select id="lanc-flt-setor-ocorrencia" onchange="renderTable()">
+          <option value="TODOS">Todos os Setores</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Motivo</label>
+        <select id="lanc-flt-motivo" onchange="renderTable()">
+          <option value="TODOS">Todos os Motivos</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Ordenar Por</label>
+        <select id="lanc-flt-ordem" onchange="renderTable()">
+          <option value="data-desc">Data (Mais recente primeiro)</option>
+          <option value="data-asc">Data (Mais antiga primeiro)</option>
+          <option value="qtde-desc">Quantidade (Maior para menor)</option>
+          <option value="qtde-asc">Quantidade (Menor para maior)</option>
+          <option value="prod-asc">Produto (A → Z)</option>
+          <option value="id-desc">Ordem de Cadastro (Últimos)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Busca Livre (Peça / Obs)</label>
+        <input type="text" id="search-box" placeholder="Digite para buscar..." onkeyup="renderTable()">
+      </div>
+      <div class="field">
+        <label>Pendências</label>
+        <button id="btn-incomplete" class="btn-warn" style="width:100%; justify-content:center;" onclick="toggleIncompleteFilter()">
+          ⚠️ Incompletos (<span id="incomplete-count">0</span>)
+        </button>
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <button class="btn-secondary" style="width:100%; justify-content:center;" onclick="resetLancFilters()">🧹 Limpar Filtros</button>
+      </div>
+    </div>
+
+    <!-- Tabela de Histórico -->
+    <div class="table-card">
+      <div class="table-header">
+        <strong style="color:var(--navy);">Histórico de Lançamentos</strong>
+        <div class="table-stats">
+          <span class="stat-pill" id="lanc-stat-registros">0 registros exibidos</span>
+          <span class="stat-pill" style="background:#DBEAFE; color:#1E40AF;" id="lanc-stat-pecas">0 peças totais</span>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Lançamento</th>
+              <th>Data</th>
+              <th>Período</th>
+              <th>Produto</th>
+              <th style="text-align:right;">Qtde</th>
+              <th>Setor Causador</th>
+              <th>Setor Ocorrência</th>
+              <th>Motivo</th>
+              <th>Peça / Componente</th>
+              <th>Observações</th>
+              <th class="no-print">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-lancamentos"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== VIEW 3: PRODUÇÃO MENSAL ==================== -->
+  <div id="view-producao" class="view">
+    <div class="form-card" style="max-width:720px;">
+      <h2>Volume de Produção Mensal (Para Cálculo da % de Não Conformidade)</h2>
+      <p style="font-size:0.85rem; color:var(--muted); margin-bottom:14px;">
+        Informe o total de peças produzidas em cada mês para calcular automaticamente o indicador <strong>% NC sobre Produção</strong> no relatório.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Mês / Período</th>
+            <th style="text-align:right;">Peças NC Registradas</th>
+            <th style="text-align:right;">Produção Total (Peças)</th>
+            <th style="text-align:right;">% Não Conformidade</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-producao"></tbody>
+      </table>
+      <div class="form-actions">
+        <button class="btn-primary" onclick="saveProduction()">💾 Salvar Volumes de Produção</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== VIEW 4: CADASTROS ==================== -->
+  <div id="view-cadastros" class="view">
+    <div class="cadastros-grid">
+      <div class="form-card">
+        <h2>Produtos / Modelos</h2>
+        <div style="display:flex; gap:8px; margin-bottom:12px;">
+          <input type="text" id="new-produto" placeholder="Nome do novo produto..." style="flex:1; padding:8px; border:1px solid var(--border); border-radius:6px;">
+          <button class="btn-primary" onclick="addCatalog('produtos', 'new-produto')">+ Add</button>
+        </div>
+        <div id="list-produtos" style="max-height:360px; overflow-y:auto; border:1px solid var(--border); border-radius:6px;"></div>
+      </div>
+
+      <div class="form-card">
+        <h2>Setores</h2>
+        <div style="display:flex; gap:8px; margin-bottom:12px;">
+          <input type="text" id="new-setor" placeholder="Nome do novo setor..." style="flex:1; padding:8px; border:1px solid var(--border); border-radius:6px;">
+          <button class="btn-primary" onclick="addCatalog('setores', 'new-setor')">+ Add</button>
+        </div>
+        <div id="list-setores" style="max-height:360px; overflow-y:auto; border:1px solid var(--border); border-radius:6px;"></div>
+      </div>
+
+      <div class="form-card">
+        <h2>Motivos de Não Conformidade</h2>
+        <div style="display:flex; gap:8px; margin-bottom:12px;">
+          <input type="text" id="new-motivo" placeholder="Nome do novo motivo..." style="flex:1; padding:8px; border:1px solid var(--border); border-radius:6px;">
+          <button class="btn-primary" onclick="addCatalog('motivos', 'new-motivo')">+ Add</button>
+        </div>
+        <div id="list-motivos" style="max-height:360px; overflow-y:auto; border:1px solid var(--border); border-radius:6px;"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SEED_DATA = {"produtos":[],"setores":[],"motivos":[],"destinos":[],"records":[]};
+
+const STORAGE_KEY = 'nc_producao_app_v1';
+const PROD_KEY = 'nc_app_producao_v1';
+const CAT_KEY = 'nc_app_catalogos_v1';
+const DELETED_KEY = 'nc_app_deleted_v1';
+
+const MESES = [
+  { key: '2026-01', label: 'Jan/2026' },
+  { key: '2026-02', label: 'Fev/2026' },
+  { key: '2026-03', label: 'Mar/2026' },
+  { key: '2026-04', label: 'Abr/2026' },
+  { key: '2026-05', label: 'Mai/2026' },
+  { key: '2026-06', label: 'Jun/2026' },
+  { key: '2026-07', label: 'Jul/2026' },
+  { key: '2026-08', label: 'Ago/2026' },
+  { key: '2026-09', label: 'Set/2026' },
+  { key: '2026-10', label: 'Out/2026' },
+  { key: '2026-11', label: 'Nov/2026' },
+  { key: '2026-12', label: 'Dez/2026' }
+];
+
+const PALETTE = [
+  '#1E3A5F', '#2B6CB0', '#D97706', '#059669', '#DC2626',
+  '#7C3AED', '#0891B2', '#DB2777', '#4F46E5', '#65A30D', '#64748B'
+];
+
+let state = {
+  records: [],
+  producao: {},
+  catalogos: {
+    produtos: [],
+    setores: [],
+    motivos: []
+  }
+};
+
+let charts = {};
+let onlyIncomplete = false;
+let draftItems = [];
+let ocrDraftRows = [];
+let deletedRecordUids = new Set();
+
+function createUid() {
+  return window.crypto && typeof window.crypto.randomUUID === 'function'
+    ? window.crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+const EMBEDDED_SNAPSHOT = null;
+
+function init() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    state.records = JSON.parse(saved);
+  } else if (EMBEDDED_SNAPSHOT) {
+    state.records = EMBEDDED_SNAPSHOT.records || [];
+  } else {
+    state.records = SEED_DATA.records;
+  }
+
+  state.records = state.records.map((r, index) => ({
+    ...r,
+    uid: r.uid || `legacy-${r.id || index + 1}`,
+    launchNumber: Number(r.launchNumber) || Number(r.lancamento) || Number(r.id),
+    launchItem: Number(r.launchItem) || 1,
+    launchKey: r.launchKey || `legacy-${Number(r.launchNumber) || Number(r.lancamento) || Number(r.id)}`,
+    updatedAt: r.updatedAt || ''
+  }));
+  const savedDeleted = localStorage.getItem(DELETED_KEY);
+  const embeddedDeleted = EMBEDDED_SNAPSHOT && Array.isArray(EMBEDDED_SNAPSHOT.deletedUids)
+    ? EMBEDDED_SNAPSHOT.deletedUids
+    : [];
+  const deleted = savedDeleted ? JSON.parse(savedDeleted) : embeddedDeleted;
+  deletedRecordUids = new Set(Array.isArray(deleted) ? deleted : []);
+  renumberLaunchesByDate();
+
+  const savedProd = localStorage.getItem(PROD_KEY);
+  if (savedProd) {
+    state.producao = JSON.parse(savedProd);
+  } else if (EMBEDDED_SNAPSHOT && EMBEDDED_SNAPSHOT.producao) {
+    state.producao = EMBEDDED_SNAPSHOT.producao;
+  } else {
+    MESES.forEach(m => state.producao[m.key] = 0);
+  }
+
+  const savedCat = localStorage.getItem(CAT_KEY);
+  if (savedCat) {
+    state.catalogos = JSON.parse(savedCat);
+  } else if (EMBEDDED_SNAPSHOT && EMBEDDED_SNAPSHOT.catalogos) {
+    state.catalogos = EMBEDDED_SNAPSHOT.catalogos;
+  } else {
+    state.catalogos = {
+      produtos: [...SEED_DATA.produtos],
+      setores: [...SEED_DATA.setores],
+      motivos: [...SEED_DATA.motivos]
+    };
+  }
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records));
+  localStorage.setItem(PROD_KEY, JSON.stringify(state.producao));
+  localStorage.setItem(CAT_KEY, JSON.stringify(state.catalogos));
+
+  populateDropdowns();
+  document.getElementById('inp-data').value = new Date().toISOString().slice(0, 10);
+  updateLaunchNumberPreview();
+  renderAll();
+}
+
+function isRecordIncomplete(r) {
+  const missingCore = !r.setor || !r.setorOcorrencia || !r.motivo;
+  const flaggedText =
+    (r.obs || '').includes('VER ') ||
+    (r.obs || '').includes('NÃO INFORMADO') ||
+    (r.obs || '').includes('NAO INFORMADO') ||
+    (r.obs || '').includes('?') ||
+    (r.peca || '').includes('VER ') ||
+    (r.peca || '').includes('NÃO INFORMADO') ||
+    (r.peca || '').includes('?');
+  return missingCore || flaggedText;
+}
+
+function populateDropdowns() {
+  const dl = document.getElementById('dl-produtos');
+  dl.innerHTML = state.catalogos.produtos.map(p => `<option value="${escapeHtml(p)}">`).join('');
+
+  fillSelect('inp-setor', [''].concat(state.catalogos.setores), '(Selecione o Setor Causador)');
+  fillSelect('inp-setor-ocorrencia', [''].concat(state.catalogos.setores), '(Selecione Onde Ocorreu)');
+  fillSelect('inp-motivo', [''].concat(state.catalogos.motivos), '(Selecione o Motivo)');
+
+  const allProds = Array.from(new Set([
+    ...state.catalogos.produtos,
+    ...state.records.map(r => r.produto).filter(Boolean)
+  ])).sort();
+
+  // Filtros do Dashboard
+  const fltPer = document.getElementById('flt-periodo');
+  const curPer = fltPer.value || 'TODOS';
+  fltPer.innerHTML = '<option value="TODOS">Todos os Meses (2026)</option>' +
+    MESES.map(m => `<option value="${m.key}">${m.label}</option>`).join('');
+  fltPer.value = curPer;
+
+  fillSelect('flt-produto', ['TODOS'].concat(allProds), 'Todos os Produtos');
+  fillSelect('flt-setor', ['TODOS', '(NÃO INFORMADO)'].concat(state.catalogos.setores), 'Todos os Setores');
+  fillSelect('flt-setor-ocorrencia', ['TODOS', '(NÃO INFORMADO)'].concat(state.catalogos.setores), 'Todos os Setores');
+  fillSelect('flt-motivo', ['TODOS', '(NÃO INFORMADO)'].concat(state.catalogos.motivos), 'Todos os Motivos');
+
+  // Filtros da Aba Lançamentos
+  const lancFltPer = document.getElementById('lanc-flt-periodo');
+  const curLancPer = lancFltPer.value || 'TODOS';
+  lancFltPer.innerHTML = '<option value="TODOS">Todos os Meses</option>' +
+    MESES.map(m => `<option value="${m.key}">${m.label}</option>`).join('');
+  lancFltPer.value = curLancPer;
+
+  fillSelect('lanc-flt-produto', ['TODOS'].concat(allProds), 'Todos os Produtos');
+  fillSelect('lanc-flt-setor', ['TODOS', '(NÃO INFORMADO)'].concat(state.catalogos.setores), 'Todos os Setores');
+  fillSelect('lanc-flt-setor-ocorrencia', ['TODOS', '(NÃO INFORMADO)'].concat(state.catalogos.setores), 'Todos os Setores');
+  fillSelect('lanc-flt-motivo', ['TODOS', '(NÃO INFORMADO)'].concat(state.catalogos.motivos), 'Todos os Motivos');
+}
+
+function fillSelect(id, items, firstLabel) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const prev = el.value;
+  el.innerHTML = items.map((v, i) => {
+    const lbl = (i === 0 && firstLabel) ? firstLabel : v;
+    return `<option value="${escapeHtml(v)}">${escapeHtml(lbl)}</option>`;
+  }).join('');
+  if ([...el.options].some(o => o.value === prev)) el.value = prev;
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('view-' + tab).classList.add('active');
+  if (tab === 'dashboard') renderDashboard();
+  if (tab === 'lancamentos') renderTable();
+  if (tab === 'producao') renderProductionTable();
+  if (tab === 'cadastros') renderCadastros();
+}
+
+function renderCadastros() {
+  ['produtos', 'setores', 'motivos'].forEach(tipo => {
+    const box = document.getElementById('list-' + tipo);
+    box.innerHTML = state.catalogos[tipo].map((item, idx) => `
+      <div class="list-item">
+        <span>${escapeHtml(item)}</span>
+        <button class="btn-danger" onclick="removeCatalog('${tipo}', ${idx})">Remover</button>
+      </div>
+    `).join('');
+  });
+}
+
+function addCatalog(tipo, inputId) {
+  const inp = document.getElementById(inputId);
+  const val = inp.value.trim().toUpperCase();
+  if (!val) return;
+  if (!state.catalogos[tipo].includes(val)) {
+    state.catalogos[tipo].push(val);
+    state.catalogos[tipo].sort();
+    localStorage.setItem(CAT_KEY, JSON.stringify(state.catalogos));
+    populateDropdowns();
+    renderCadastros();
+  }
+  inp.value = '';
+}
+
+function removeCatalog(tipo, idx) {
+  if (!confirm('Remover este item da lista de opções?')) return;
+  state.catalogos[tipo].splice(idx, 1);
+  localStorage.setItem(CAT_KEY, JSON.stringify(state.catalogos));
+  populateDropdowns();
+  renderCadastros();
+}
+
+function getPeriodoKey(dateStr) {
+  return (dateStr || '').slice(0, 7);
+}
+
+function formatPeriodoLabel(dateStr) {
+  const key = getPeriodoKey(dateStr);
+  const found = MESES.find(m => m.key === key);
+  return found ? found.label : key;
+}
+
+function formatDateBR(dateStr) {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
+function getLaunchGroupsByDate() {
+  const groups = new Map();
+  state.records.forEach(r => {
+    const key = r.launchKey || `record-${r.id}`;
+    if (!groups.has(key)) {
+      groups.set(key, { key, date: r.data || '', firstId: Number(r.id) || 0, records: [] });
+    }
+    const group = groups.get(key);
+    if (r.data && (!group.date || r.data < group.date)) group.date = r.data;
+    group.firstId = Math.min(group.firstId, Number(r.id) || 0);
+    group.records.push(r);
+  });
+  return Array.from(groups.values()).sort((a, b) =>
+    (a.date || '9999-12-31').localeCompare(b.date || '9999-12-31') ||
+    a.firstId - b.firstId
+  );
+}
+
+function renumberLaunchesByDate() {
+  getLaunchGroupsByDate().forEach((group, index) => {
+    group.records.forEach(r => {
+      r.launchNumber = index + 1;
+    });
+  });
+}
+
+function getNextLaunchNumber(date = document.getElementById('inp-data').value) {
+  const groups = getLaunchGroupsByDate();
+  if (!date) return groups.length + 1;
+  return groups.filter(group => group.date && group.date <= date).length + 1;
+}
+
+function updateLaunchNumberPreview() {
+  if (document.getElementById('edit-id').value) return;
+  document.getElementById('inp-lancamento').value = getNextLaunchNumber();
+}
+
+function collectDraftItem() {
+  const data = document.getElementById('inp-data').value;
+  const produto = document.getElementById('inp-produto').value.trim().toUpperCase();
+  const qtde = parseInt(document.getElementById('inp-qtde').value, 10);
+  const setor = document.getElementById('inp-setor').value;
+  const setorOcorrencia = document.getElementById('inp-setor-ocorrencia').value;
+  const motivo = document.getElementById('inp-motivo').value;
+  const peca = document.getElementById('inp-peca').value.trim().toUpperCase();
+  const obs = document.getElementById('inp-obs').value.trim().toUpperCase();
+
+  if (!data || !produto || !qtde || qtde < 1) {
+    alert('Preencha pelo menos Data, Produto e Quantidade.');
+    return null;
+  }
+
+  return { data, produto, qtde, setor, setorOcorrencia, motivo, peca, obs };
+}
+
+function addDraftItem() {
+  if (document.getElementById('edit-id').value) {
+    alert('Finalize ou cancele a edição antes de preparar novos itens.');
+    return;
+  }
+  const item = collectDraftItem();
+  if (!item) return;
+
+  if (!state.catalogos.produtos.includes(item.produto)) {
+    state.catalogos.produtos.push(item.produto);
+    state.catalogos.produtos.sort();
+  }
+  if (item.setor && !state.catalogos.setores.includes(item.setor)) state.catalogos.setores.push(item.setor);
+  if (item.setorOcorrencia && !state.catalogos.setores.includes(item.setorOcorrencia)) state.catalogos.setores.push(item.setorOcorrencia);
+  if (item.motivo && !state.catalogos.motivos.includes(item.motivo)) state.catalogos.motivos.push(item.motivo);
+  localStorage.setItem(CAT_KEY, JSON.stringify(state.catalogos));
+
+  draftItems.push(item);
+  renderDraftItems();
+  document.getElementById('inp-produto').value = '';
+  document.getElementById('inp-qtde').value = 1;
+  document.getElementById('inp-setor').value = '';
+  document.getElementById('inp-setor-ocorrencia').value = '';
+  document.getElementById('inp-motivo').value = '';
+  document.getElementById('inp-peca').value = '';
+  document.getElementById('inp-obs').value = '';
+  document.getElementById('inp-produto').focus();
+  populateDropdowns();
+}
+
+function removeDraftItem(index) {
+  draftItems.splice(index, 1);
+  renderDraftItems();
+}
+
+function renderDraftItems() {
+  const panel = document.getElementById('draft-panel');
+  const tbody = document.getElementById('tbody-draft-items');
+  document.getElementById('draft-count').textContent = draftItems.length;
+  panel.style.display = draftItems.length ? 'block' : 'none';
+  tbody.innerHTML = draftItems.map((item, index) => `
+    <tr>
+      <td style="text-align:center;">${index + 1}</td>
+      <td>${escapeHtml(formatDateBR(item.data))}</td>
+      <td><strong>${escapeHtml(item.produto)}</strong></td>
+      <td style="text-align:right;">${item.qtde.toLocaleString('pt-BR')}</td>
+      <td>${escapeHtml(item.setor) || '(Pendente)'}</td>
+      <td>${escapeHtml(item.setorOcorrencia) || '(Pendente)'}</td>
+      <td>${escapeHtml(item.motivo) || '(Pendente)'}</td>
+      <td>${escapeHtml(item.peca) || '—'}</td>
+      <td>${escapeHtml(item.obs)}</td>
+      <td class="no-print"><button class="btn-danger" onclick="removeDraftItem(${index})">Remover</button></td>
+    </tr>
+  `).join('');
+}
+
+function saveRecord() {
+  const editId = document.getElementById('edit-id').value;
+
+  if (editId) {
+    const item = collectDraftItem();
+    if (!item) return;
+    const idx = state.records.findIndex(r => String(r.id) === String(editId));
+    if (idx !== -1) {
+      state.records[idx] = {
+        ...state.records[idx],
+        ...item,
+        id: Number(editId),
+        updatedAt: new Date().toISOString(),
+        launchNumber: Number(document.getElementById('inp-lancamento').value) || state.records[idx].launchNumber,
+        launchItem: state.records[idx].launchItem || 1
+      };
+    }
+  } else {
+    let items = [...draftItems];
+    if (!items.length) {
+      const currentItem = collectDraftItem();
+      if (currentItem) items.push(currentItem);
+    } else {
+      const hasCurrentItem = document.getElementById('inp-produto').value.trim() &&
+        parseInt(document.getElementById('inp-qtde').value, 10) > 0;
+      if (hasCurrentItem) {
+        const currentItem = collectDraftItem();
+        if (currentItem) items.push(currentItem);
+      }
+    }
+
+    if (!items.length) {
+      alert('Adicione pelo menos um item ao lançamento.');
+      return;
+    }
+
+    const launchNumber = Number(document.getElementById('inp-lancamento').value) || getNextLaunchNumber();
+    let newId = state.records.length ? Math.max(...state.records.map(r => r.id)) + 1 : 1;
+    const launchKey = `new-${createUid()}`;
+    const newRecords = items.map((item, index) => ({
+      id: newId++,
+      uid: createUid(),
+      updatedAt: new Date().toISOString(),
+      launchNumber,
+      launchKey,
+      launchItem: index + 1,
+      lote: '',
+      destino: '',
+      ...item
+    }));
+    state.records = [...newRecords.reverse(), ...state.records];
+  }
+
+  renumberLaunchesByDate();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records));
+  populateDropdowns();
+  clearForm();
+  renderAll();
+}
+
+function editRecord(id) {
+  const rec = state.records.find(r => r.id === id);
+  if (!rec) return;
+  draftItems = [];
+  renderDraftItems();
+  document.getElementById('edit-id').value = rec.id;
+  document.getElementById('form-title').textContent = 'Editando Lançamento #' + rec.id;
+  document.getElementById('inp-lancamento').value = rec.launchNumber || rec.id;
+  document.getElementById('btn-add-item').disabled = true;
+  document.getElementById('inp-data').value = rec.data;
+  document.getElementById('inp-produto').value = rec.produto;
+  document.getElementById('inp-qtde').value = rec.qtde;
+  document.getElementById('inp-setor').value = rec.setor || '';
+  document.getElementById('inp-setor-ocorrencia').value = rec.setorOcorrencia || '';
+  document.getElementById('inp-motivo').value = rec.motivo || '';
+  document.getElementById('inp-peca').value = rec.peca || '';
+  document.getElementById('inp-obs').value = rec.obs || '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function deleteRecord(id) {
+  if (!confirm('Deseja excluir este lançamento?')) return;
+  const deleted = state.records.find(r => r.id === id);
+  if (deleted && deleted.uid) {
+    deletedRecordUids.add(deleted.uid);
+    localStorage.setItem(DELETED_KEY, JSON.stringify(Array.from(deletedRecordUids)));
+  }
+  state.records = state.records.filter(r => r.id !== id);
+  renumberLaunchesByDate();
+  updateLaunchNumberPreview();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records));
+  populateDropdowns();
+  renderAll();
+}
+
+function clearForm() {
+  document.getElementById('edit-id').value = '';
+  document.getElementById('form-title').textContent = 'Registrar Nova Não Conformidade';
+  draftItems = [];
+  renderDraftItems();
+  document.getElementById('btn-add-item').disabled = false;
+  updateLaunchNumberPreview();
+  document.getElementById('inp-produto').value = '';
+  document.getElementById('inp-qtde').value = 1;
+  document.getElementById('inp-setor').value = '';
+  document.getElementById('inp-setor-ocorrencia').value = '';
+  document.getElementById('inp-motivo').value = '';
+  document.getElementById('inp-peca').value = '';
+  document.getElementById('inp-obs').value = '';
+}
+
+function resetFilters() {
+  document.getElementById('flt-periodo').value = 'TODOS';
+  document.getElementById('flt-produto').value = 'TODOS';
+  document.getElementById('flt-setor').value = 'TODOS';
+  document.getElementById('flt-setor-ocorrencia').value = 'TODOS';
+  document.getElementById('flt-motivo').value = 'TODOS';
+  renderDashboard();
+}
+
+function toggleIncompleteFilter() {
+  onlyIncomplete = !onlyIncomplete;
+  const btn = document.getElementById('btn-incomplete');
+  if (onlyIncomplete) {
+    btn.classList.add('active-filter');
+  } else {
+    btn.classList.remove('active-filter');
+  }
+  renderTable();
+}
+
+function resetLancFilters() {
+  document.getElementById('lanc-flt-periodo').value = 'TODOS';
+  document.getElementById('lanc-flt-lancamento').value = '';
+  document.getElementById('lanc-flt-data-ini').value = '';
+  document.getElementById('lanc-flt-data-fim').value = '';
+  document.getElementById('lanc-flt-produto').value = 'TODOS';
+  document.getElementById('lanc-flt-setor').value = 'TODOS';
+  document.getElementById('lanc-flt-setor-ocorrencia').value = 'TODOS';
+  document.getElementById('lanc-flt-motivo').value = 'TODOS';
+  document.getElementById('lanc-flt-ordem').value = 'data-desc';
+  document.getElementById('search-box').value = '';
+  onlyIncomplete = false;
+  document.getElementById('btn-incomplete').classList.remove('active-filter');
+  renderTable();
+}
+
+function getFilteredRecords() {
+  const fPer = document.getElementById('flt-periodo').value;
+  const fProd = document.getElementById('flt-produto').value;
+  const fSet = document.getElementById('flt-setor').value;
+  const fSetOc = document.getElementById('flt-setor-ocorrencia').value;
+  const fMot = document.getElementById('flt-motivo').value;
+
+  return state.records.filter(r => {
+    const per = getPeriodoKey(r.data);
+    const set = r.setor || '(NÃO INFORMADO)';
+    const setOc = r.setorOcorrencia || '(NÃO INFORMADO)';
+    const mot = r.motivo || '(NÃO INFORMADO)';
+    if (fPer !== 'TODOS' && per !== fPer) return false;
+    if (fProd !== 'TODOS' && r.produto !== fProd) return false;
+    if (fSet !== 'TODOS' && set !== fSet) return false;
+    if (fSetOc !== 'TODOS' && setOc !== fSetOc) return false;
+    if (fMot !== 'TODOS' && mot !== fMot) return false;
+    return true;
+  });
+}
+
+function renderAll() {
+  document.getElementById('count-badge').textContent = state.records.length;
+  const emptyNotice = document.getElementById('empty-base-notice');
+  if (emptyNotice) emptyNotice.style.display = state.records.length ? 'none' : 'flex';
+  const incTotal = state.records.filter(isRecordIncomplete).length;
+  document.getElementById('incomplete-count').textContent = incTotal;
+  renderTable();
+  renderDashboard();
+}
+
+function renderTable() {
+  const incTotal = state.records.filter(isRecordIncomplete).length;
+  document.getElementById('incomplete-count').textContent = incTotal;
+
+  const fPer = document.getElementById('lanc-flt-periodo').value;
+  const fLancamento = document.getElementById('lanc-flt-lancamento').value.trim();
+  const fDataIni = document.getElementById('lanc-flt-data-ini').value;
+  const fDataFim = document.getElementById('lanc-flt-data-fim').value;
+  const fProd = document.getElementById('lanc-flt-produto').value;
+  const fSet = document.getElementById('lanc-flt-setor').value;
+  const fSetOc = document.getElementById('lanc-flt-setor-ocorrencia').value;
+  const fMot = document.getElementById('lanc-flt-motivo').value;
+  const ordem = document.getElementById('lanc-flt-ordem').value;
+  const q = (document.getElementById('search-box').value || '').toUpperCase().trim();
+
+  let filtered = state.records.filter(r => {
+    const per = getPeriodoKey(r.data);
+    const set = r.setor || '(NÃO INFORMADO)';
+    const setOc = r.setorOcorrencia || '(NÃO INFORMADO)';
+    const mot = r.motivo || '(NÃO INFORMADO)';
+
+    if (onlyIncomplete && !isRecordIncomplete(r)) return false;
+    if (fPer !== 'TODOS' && per !== fPer) return false;
+    if (fLancamento && String(r.launchNumber || r.id) !== fLancamento) return false;
+    if (fDataIni && r.data < fDataIni) return false;
+    if (fDataFim && r.data > fDataFim) return false;
+    if (fProd !== 'TODOS' && r.produto !== fProd) return false;
+    if (fSet !== 'TODOS' && set !== fSet) return false;
+    if (fSetOc !== 'TODOS' && setOc !== fSetOc) return false;
+    if (fMot !== 'TODOS' && mot !== fMot) return false;
+
+    if (q) {
+      const matchText =
+        (r.produto || '').includes(q) ||
+        (r.peca || '').includes(q) ||
+        (r.setor || '').includes(q) ||
+        (r.setorOcorrencia || '').includes(q) ||
+        (r.motivo || '').includes(q) ||
+        (r.obs || '').includes(q) ||
+        formatDateBR(r.data).includes(q);
+      if (!matchText) return false;
+    }
+
+    return true;
+  });
+
+  filtered.sort((a, b) => {
+    if (ordem === 'data-desc') return (b.data || '').localeCompare(a.data || '') || b.id - a.id;
+    if (ordem === 'data-asc') return (a.data || '').localeCompare(b.data || '') || a.id - b.id;
+    if (ordem === 'qtde-desc') return (b.qtde || 0) - (a.qtde || 0);
+    if (ordem === 'qtde-asc') return (a.qtde || 0) - (b.qtde || 0);
+    if (ordem === 'prod-asc') return (a.produto || '').localeCompare(b.produto || '');
+    if (ordem === 'id-desc') return b.id - a.id;
+    return 0;
+  });
+
+  const totalPecas = filtered.reduce((acc, r) => acc + (Number(r.qtde) || 0), 0);
+  document.getElementById('lanc-stat-registros').textContent = `${filtered.length} ${filtered.length === 1 ? 'registro exibido' : 'registros exibidos'}`;
+  document.getElementById('lanc-stat-pecas').textContent = `${totalPecas.toLocaleString('pt-BR')} peças totais`;
+
+  const tbody = document.getElementById('tbody-lancamentos');
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:24px; color:var(--muted);">Nenhum lançamento encontrado com os filtros atuais.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(r => {
+    const inc = isRecordIncomplete(r);
+    const launchNumber = Number(r.launchNumber) || Number(r.id) || 0;
+    const launchItem = Number(r.launchItem) || 0;
+    return `<tr class="${inc ? 'row-incomplete' : ''}">
+      <td style="white-space:nowrap;"><strong>#${launchNumber}</strong>${launchItem ? ` / ${launchItem}` : ''}</td>
+      <td style="white-space:nowrap;">${inc ? '⚠️ ' : ''}${escapeHtml(formatDateBR(r.data))}</td>
+      <td style="white-space:nowrap;">${escapeHtml(formatPeriodoLabel(r.data))}</td>
+      <td><strong>${escapeHtml(r.produto)}</strong></td>
+      <td style="text-align:right; font-weight:700;">${r.qtde.toLocaleString('pt-BR')}</td>
+      <td>${r.setor ? escapeHtml(r.setor) : '<span style="color:#D97706; font-weight:600;">(Pendente)</span>'}</td>
+      <td>${r.setorOcorrencia ? escapeHtml(r.setorOcorrencia) : '<span style="color:#D97706; font-weight:600;">(Pendente)</span>'}</td>
+      <td>${r.motivo ? escapeHtml(r.motivo) : '<span style="color:#D97706; font-weight:600;">(Pendente)</span>'}</td>
+      <td>${escapeHtml(r.peca) || '—'}</td>
+      <td>${escapeHtml(r.obs)}</td>
+      <td class="no-print" style="white-space:nowrap;">
+        <button class="btn-edit" onclick="editRecord(${r.id})">Editar</button>
+        <button class="btn-danger" onclick="deleteRecord(${r.id})">X</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function groupSum(arr, keyFn) {
+  const map = {};
+  arr.forEach(item => {
+    const k = keyFn(item);
+    map[k] = (map[k] || 0) + item.qtde;
+  });
+  return Object.entries(map).sort((a, b) => b[1] - a[1]);
+}
+
+function shortenChartLabel(label, maxLength) {
+  const text = String(label);
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1).trimEnd()}…` : text;
+}
+
+function renderDashboard() {
+  const rows = getFilteredRecords();
+  const totalPecas = rows.reduce((acc, r) => acc + r.qtde, 0);
+
+  document.getElementById('kpi-pecas').textContent = totalPecas.toLocaleString('pt-BR');
+  document.getElementById('kpi-registros').textContent = `${rows.length} ocorrências registradas`;
+
+  const bySetor = groupSum(rows, r => r.setor || '(NÃO INFORMADO)');
+  const byMotivo = groupSum(rows, r => r.motivo || '(NÃO INFORMADO)');
+  const byProduto = groupSum(rows, r => r.produto || '(NÃO INFORMADO)');
+
+  if (bySetor.length) {
+    const pct = totalPecas ? ((bySetor[0][1] / totalPecas) * 100).toFixed(1) : 0;
+    document.getElementById('kpi-setor').textContent = bySetor[0][0];
+    document.getElementById('kpi-setor-sub').textContent = `${bySetor[0][1].toLocaleString('pt-BR')} peças (${pct}%)`;
+  } else {
+    document.getElementById('kpi-setor').textContent = '—';
+    document.getElementById('kpi-setor-sub').textContent = '0 peças';
+  }
+
+  if (byMotivo.length) {
+    const pct = totalPecas ? ((byMotivo[0][1] / totalPecas) * 100).toFixed(1) : 0;
+    document.getElementById('kpi-motivo').textContent = byMotivo[0][0];
+    document.getElementById('kpi-motivo-sub').textContent = `${byMotivo[0][1].toLocaleString('pt-BR')} peças (${pct}%)`;
+  } else {
+    document.getElementById('kpi-motivo').textContent = '—';
+    document.getElementById('kpi-motivo-sub').textContent = '0 peças';
+  }
+
+  if (byProduto.length) {
+    const pct = totalPecas ? ((byProduto[0][1] / totalPecas) * 100).toFixed(1) : 0;
+    document.getElementById('kpi-produto').textContent = byProduto[0][0];
+    document.getElementById('kpi-produto-sub').textContent = `${byProduto[0][1].toLocaleString('pt-BR')} peças (${pct}%)`;
+  } else {
+    document.getElementById('kpi-produto').textContent = '—';
+    document.getElementById('kpi-produto-sub').textContent = '0 peças';
+  }
+
+  // Gráfico 1: Setor Origem
+  const tSetor = document.getElementById('type-chartSetor').value;
+  renderFlexibleChart('chartSetor', bySetor.map(x => x[0]), bySetor.map(x => x[1]), tSetor, '#1E3A5F');
+
+  // Gráfico 2: Pareto de Motivos (com curva acumulada)
+  const tMotivo = document.getElementById('type-chartMotivo').value;
+  if (tMotivo === 'pareto') {
+    drawParetoChart('chartMotivo', byMotivo.map(x => x[0]), byMotivo.map(x => x[1]));
+  } else {
+    renderFlexibleChart('chartMotivo', byMotivo.map(x => x[0]), byMotivo.map(x => x[1]), tMotivo, '#2B6CB0');
+  }
+
+  // Gráfico 3: Top 8 Produtos
+  const top8 = byProduto.slice(0, 8);
+  const tProduto = document.getElementById('type-chartProduto').value;
+  renderFlexibleChart('chartProduto', top8.map(x => x[0]), top8.map(x => x[1]), tProduto, '#3182CE');
+
+  // Gráfico 4: Evolução Mensal
+  const fProd = document.getElementById('flt-produto').value;
+  const fSet = document.getElementById('flt-setor').value;
+  const fSetOc = document.getElementById('flt-setor-ocorrencia').value;
+  const fMot = document.getElementById('flt-motivo').value;
+
+  const rowsNoMonth = state.records.filter(r => {
+    const set = r.setor || '(NÃO INFORMADO)';
+    const setOc = r.setorOcorrencia || '(NÃO INFORMADO)';
+    const mot = r.motivo || '(NÃO INFORMADO)';
+    if (fProd !== 'TODOS' && r.produto !== fProd) return false;
+    if (fSet !== 'TODOS' && set !== fSet) return false;
+    if (fSetOc !== 'TODOS' && setOc !== fSetOc) return false;
+    if (fMot !== 'TODOS' && mot !== fMot) return false;
+    return true;
+  });
+
+  const monthLabels = MESES.map(m => m.label.slice(0, 3));
+  const monthVals = MESES.map(m => rowsNoMonth.filter(r => getPeriodoKey(r.data) === m.key).reduce((a, r) => a + r.qtde, 0));
+  const monthTaxas = MESES.map((m, idx) => {
+    const prodM = Number(state.producao[m.key]) || 0;
+    return prodM > 0 ? Number(((monthVals[idx] / prodM) * 100).toFixed(2)) : 0;
+  });
+
+  const tMensal = document.getElementById('type-chartMensal').value;
+  if (tMensal === 'combo-taxa') {
+    drawMonthlyComboChart('chartMensal', monthLabels, monthVals, monthTaxas);
+  } else {
+    renderFlexibleChart('chartMensal', monthLabels, monthVals, tMensal, '#1E3A5F');
+  }
+
+  // Gráfico 5 e Matriz: Setor Origem vs Setor Ocorrência
+  renderCrossSection(rows);
+
+  // Resumo Consolidado por Setor
+  const tbodyRes = document.getElementById('tbody-resumo-setor');
+  tbodyRes.innerHTML = bySetor.map(([setorName, qtd]) => {
+    const subRows = rows.filter(r => (r.setor || '(NÃO INFORMADO)') === setorName);
+    const topMot = groupSum(subRows, r => r.motivo || '(NÃO INFORMADO)')[0];
+    const topDet = groupSum(subRows, r => r.setorOcorrencia || '(NÃO INFORMADO)')[0];
+    const pct = totalPecas ? ((qtd / totalPecas) * 100).toFixed(1).replace('.', ',') : '0,0';
+    return `<tr>
+      <td><strong>${escapeHtml(setorName)}</strong></td>
+      <td style="text-align:right;">${subRows.length}</td>
+      <td style="text-align:right; font-weight:700;">${qtd.toLocaleString('pt-BR')}</td>
+      <td style="text-align:right;">${pct}%</td>
+      <td>${topMot ? `${escapeHtml(topMot[0])} (${topMot[1].toLocaleString('pt-BR')} pçs)` : '—'}</td>
+      <td>${topDet ? `${escapeHtml(topDet[0])} (${topDet[1].toLocaleString('pt-BR')} pçs)` : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderFlexibleChart(canvasId, labels, values, chartType, baseColor) {
+  if (charts[canvasId]) charts[canvasId].destroy();
+  const ctx = document.getElementById(canvasId).getContext('2d');
+
+  const isPieLike = ['doughnut', 'pie', 'polarArea'].includes(chartType);
+  const isLineLike = ['line', 'area'].includes(chartType);
+  const isHorizontal = chartType === 'bar-h';
+  const jsType = isPieLike ? chartType : (isLineLike ? 'line' : 'bar');
+
+  const total = values.reduce((a, b) => a + b, 0);
+
+  const dataset = {
+    data: values,
+    backgroundColor: isPieLike ? labels.map((_, i) => PALETTE[i % PALETTE.length]) : (chartType === 'area' ? 'rgba(30, 58, 95, 0.2)' : baseColor),
+    borderColor: isPieLike ? '#FFFFFF' : baseColor,
+    borderWidth: isPieLike ? 2 : (isLineLike ? 3 : 0),
+    borderRadius: (!isPieLike && !isLineLike) ? 4 : 0,
+    fill: chartType === 'area',
+    tension: 0.3,
+    pointRadius: isLineLike ? 4 : 0
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: isPieLike,
+        position: 'right',
+        labels: { boxWidth: 12, font: { size: 11 } }
+      },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const val = isPieLike ? ctx.parsed : ctx.parsed[isHorizontal ? 'x' : 'y'];
+            const pct = total > 0 ? ((val / total) * 100).toFixed(1).replace('.', ',') : '0,0';
+            return ` ${val.toLocaleString('pt-BR')} peças (${pct}%)`;
+          }
+        }
+      }
+    }
+  };
+
+  if (!isPieLike) {
+    options.indexAxis = isHorizontal ? 'y' : 'x';
+    const xTicks = { font: { size: 11 } };
+    const yTicks = { font: { size: 11 } };
+    const categoryTickCallback = function(value) {
+      return shortenChartLabel(this.getLabelForValue(value), isHorizontal ? 24 : 16);
+    };
+    if (isHorizontal) {
+      yTicks.callback = categoryTickCallback;
+    } else {
+      xTicks.callback = categoryTickCallback;
+    }
+    options.scales = {
+      x: { grid: { display: !isHorizontal }, ticks: xTicks },
+      y: { grid: { display: isHorizontal }, beginAtZero: true, ticks: yTicks }
+    };
+  }
+
+  charts[canvasId] = new Chart(ctx, {
+    type: jsType,
+    data: { labels, datasets: [dataset] },
+    options
+  });
+}
+
+function drawParetoChart(canvasId, labels, values) {
+  if (charts[canvasId]) charts[canvasId].destroy();
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  const total = values.reduce((a, b) => a + b, 0);
+
+  let acc = 0;
+  const cumPct = values.map(v => {
+    acc += v;
+    return total > 0 ? Number(((acc / total) * 100).toFixed(1)) : 0;
+  });
+
+  charts[canvasId] = new Chart(ctx, {
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'line',
+          label: '% Acumulado',
+          data: cumPct,
+          borderColor: '#D97706',
+          backgroundColor: '#D97706',
+          borderWidth: 2.5,
+          pointRadius: 4,
+          tension: 0.2,
+          yAxisID: 'y1'
+        },
+        {
+          type: 'bar',
+          label: 'Peças NC',
+          data: values,
+          backgroundColor: '#2B6CB0',
+          borderRadius: 4,
+          yAxisID: 'y'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              if (ctx.dataset.yAxisID === 'y1') {
+                return ` Acumulado: ${String(ctx.parsed.y).replace('.', ',')}%`;
+              }
+              const pct = total > 0 ? ((ctx.parsed.y / total) * 100).toFixed(1).replace('.', ',') : '0,0';
+              return ` ${ctx.parsed.y.toLocaleString('pt-BR')} peças (${pct}%)`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            font: { size: 9 },
+            autoSkip: false,
+            maxRotation: 45,
+            minRotation: 45
+          }
+        },
+        y: {
+          type: 'linear',
+          position: 'left',
+          beginAtZero: true,
+          title: { display: true, text: 'Peças NC', font: { size: 11 } }
+        },
+        y1: {
+          type: 'linear',
+          position: 'right',
+          min: 0,
+          max: 100,
+          grid: { drawOnChartArea: false },
+          ticks: { callback: v => v + '%' },
+          title: { display: true, text: '% Acumulado', font: { size: 11 } }
+        }
+      }
+    }
+  });
+}
+
+function drawMonthlyComboChart(canvasId, labels, values, taxas) {
+  if (charts[canvasId]) charts[canvasId].destroy();
+  const ctx = document.getElementById(canvasId).getContext('2d');
+
+  charts[canvasId] = new Chart(ctx, {
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'line',
+          label: '% NC s/ Produção',
+          data: taxas,
+          borderColor: '#DC2626',
+          backgroundColor: '#DC2626',
+          borderWidth: 2.5,
+          pointRadius: 4,
+          tension: 0.25,
+          yAxisID: 'y1'
+        },
+        {
+          type: 'bar',
+          label: 'Peças NC',
+          data: values,
+          backgroundColor: '#1E3A5F',
+          borderRadius: 4,
+          yAxisID: 'y'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              if (ctx.dataset.yAxisID === 'y1') {
+                return ` Taxa NC: ${String(ctx.parsed.y).replace('.', ',')}%`;
+              }
+              return ` ${ctx.parsed.y.toLocaleString('pt-BR')} peças NC`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: { type: 'linear', position: 'left', beginAtZero: true, title: { display: true, text: 'Peças NC', font: { size: 11 } } },
+        y1: {
+          type: 'linear',
+          position: 'right',
+          beginAtZero: true,
+          grid: { drawOnChartArea: false },
+          ticks: { callback: v => v + '%' },
+          title: { display: true, text: '% NC', font: { size: 11 } }
+        }
+      }
+    }
+  });
+}
+
+function renderCrossSection(rows) {
+  const byCausador = groupSum(rows, r => r.setor || '(NÃO INFORMADO)');
+  const byOcorrencia = groupSum(rows, r => r.setorOcorrencia || '(NÃO INFORMADO)');
+
+  const causadores = byCausador.map(x => x[0]);
+  const ocorrencias = byOcorrencia.map(x => x[0]);
+
+  const matrix = {};
+  causadores.forEach(c => {
+    matrix[c] = {};
+    ocorrencias.forEach(o => matrix[c][o] = 0);
+  });
+
+  rows.forEach(r => {
+    const c = r.setor || '(NÃO INFORMADO)';
+    const o = r.setorOcorrencia || '(NÃO INFORMADO)';
+    matrix[c][o] = (matrix[c][o] || 0) + r.qtde;
+  });
+
+  // Renderizar Gráfico 5
+  const tCruzado = document.getElementById('type-chartCruzado').value;
+  if (tCruzado === 'bar-deteccao') {
+    renderFlexibleChart('chartCruzado', byOcorrencia.map(x => x[0]), byOcorrencia.map(x => x[1]), 'bar-h', '#059669');
+  } else {
+    if (charts['chartCruzado']) charts['chartCruzado'].destroy();
+    const ctx = document.getElementById('chartCruzado').getContext('2d');
+    const isStacked = tCruzado === 'stacked';
+
+    const datasets = ocorrencias.map((oc, idx) => ({
+      label: `Detectado em: ${oc}`,
+      data: causadores.map(ca => matrix[ca][oc] || 0),
+      backgroundColor: PALETTE[idx % PALETTE.length],
+      borderRadius: 3
+    }));
+
+    charts['chartCruzado'] = new Chart(ctx, {
+      type: 'bar',
+      data: { labels: causadores, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString('pt-BR')} peças`
+            }
+          }
+        },
+        scales: {
+          x: { stacked: isStacked, grid: { display: false }, title: { display: true, text: 'Setor Origem', font: { size: 11, weight: 'bold' } } },
+          y: { stacked: isStacked, beginAtZero: true, title: { display: true, text: 'Peças NC', font: { size: 11 } } }
+        }
+      }
+    });
+  }
+
+  // Renderizar Tabela Matriz
+  const theadM = document.getElementById('thead-matriz');
+  const tbodyM = document.getElementById('tbody-matriz');
+
+  if (!causadores.length) {
+    theadM.innerHTML = '';
+    tbodyM.innerHTML = '<tr><td style="text-align:center; padding:16px; color:var(--muted);">Sem dados para o filtro selecionado.</td></tr>';
+    return;
+  }
+
+  theadM.innerHTML = `<tr>
+    <th>Setor Origem / Onde Ocorreu</th>
+    ${ocorrencias.map(o => `<th style="text-align:center;">${escapeHtml(o)}<span class="matrix-header-sub">(Detecção)</span></th>`).join('')}
+    <th style="text-align:right; background:#142842;">Total Origem</th>
+  </tr>`;
+
+  let maxVal = 0;
+  causadores.forEach(c => ocorrencias.forEach(o => { if (matrix[c][o] > maxVal) maxVal = matrix[c][o]; }));
+
+  tbodyM.innerHTML = causadores.map(c => {
+    const rowTotal = ocorrencias.reduce((acc, o) => acc + (matrix[c][o] || 0), 0);
+    const cells = ocorrencias.map(o => {
+      const val = matrix[c][o] || 0;
+      if (!val) return `<td class="matrix-cell-zero">—</td>`;
+      const intensity = maxVal > 0 ? Math.min(0.45, 0.1 + (val / maxVal) * 0.35) : 0.15;
+      return `<td class="matrix-cell-val" style="background:rgba(30, 58, 95, ${intensity.toFixed(2)}); color:#0F172A;">${val.toLocaleString('pt-BR')}</td>`;
+    }).join('');
+    return `<tr>
+      <td><strong>${escapeHtml(c)}</strong></td>
+      ${cells}
+      <td style="text-align:right; font-weight:800; background:#F1F5F9;">${rowTotal.toLocaleString('pt-BR')}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderProductionTable() {
+  const tbody = document.getElementById('tbody-producao');
+  tbody.innerHTML = MESES.map(m => {
+    const nc = state.records.filter(r => getPeriodoKey(r.data) === m.key).reduce((a, r) => a + r.qtde, 0);
+    const prod = Number(state.producao[m.key]) || 0;
+    const taxa = prod > 0 ? ((nc / prod) * 100).toFixed(2).replace('.', ',') + '%' : '0,00%';
+    return `<tr>
+      <td><strong>${m.label}</strong></td>
+      <td style="text-align:right;">${nc.toLocaleString('pt-BR')}</td>
+      <td style="text-align:right;">
+        <input type="number" min="0" data-mes="${m.key}" class="inp-prod-mes" value="${prod}" style="width:130px; text-align:right; padding:5px 8px; border:1px solid var(--border); border-radius:4px;" />
+      </td>
+      <td style="text-align:right; font-weight:700;">${taxa}</td>
+    </tr>`;
+  }).join('');
+}
+
+function saveProduction() {
+  document.querySelectorAll('.inp-prod-mes').forEach(inp => {
+    state.producao[inp.dataset.mes] = Number(inp.value) || 0;
+  });
+  localStorage.setItem(PROD_KEY, JSON.stringify(state.producao));
+  renderProductionTable();
+  renderDashboard();
+  alert('Volumes de produção atualizados!');
+}
+
+function exportExcel() {
+  const rows = state.records.map(r => ({
+    'LANÇAMENTO': r.launchNumber || r.id,
+    'ITEM': r.launchItem || 1,
+    'DATA': formatDateBR(r.data),
+    'PERIODO': formatPeriodoLabel(r.data),
+    'PRODUTO': r.produto,
+    'QTDE': r.qtde,
+    'SETOR CAUSADOR': r.setor || '',
+    'SETOR OCORRÊNCIA': r.setorOcorrencia || '',
+    'MOTIVO': r.motivo || '',
+    'PEÇA / COMPONENTE': r.peca || '',
+    'OBSERVAÇÕES': r.obs || ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Lançamentos');
+  XLSX.writeFile(wb, 'Relatorio_Nao_Conformidades_2026_Exportado.xlsx');
+}
+
+function downloadExcelTemplate() {
+  const sample = [{
+    'LANÇAMENTO': 1,
+    'ITEM': 1,
+    'DATA': formatDateBR(new Date().toISOString().slice(0, 10)),
+    'PRODUTO': 'ROUPEIRO STANLEY 8PT 2GV - BRANCO',
+    'QTDE': 5,
+    'SETOR CAUSADOR': 'PINTURA',
+    'SETOR OCORRÊNCIA': 'EMBALAGEM',
+    'MOTIVO': 'PINTURA RISCADA',
+    'PEÇA / COMPONENTE': 'PORTA DIREITA',
+    'OBSERVAÇÕES': 'EXEMPLO DE PREENCHIMENTO'
+  }];
+  const ws = XLSX.utils.json_to_sheet(sample);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Lançamentos');
+  XLSX.writeFile(wb, 'Modelo_Importacao_Nao_Conformidades.xlsx');
+}
+
+function parseExcelDate(val) {
+  if (val === null || val === undefined || val === '') return '';
+  if (val instanceof Date && !isNaN(val)) {
+    return val.toISOString().slice(0, 10);
+  }
+  if (typeof val === 'number' && window.XLSX && XLSX.SSF && XLSX.SSF.parse_date_code) {
+    const parsed = XLSX.SSF.parse_date_code(val);
+    if (parsed) return makeIsoDate(parsed.y, parsed.m, parsed.d);
+  }
+  const str = String(val).trim();
+  const brMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (brMatch) {
+    return makeIsoDate(Number(brMatch[3]), Number(brMatch[2]), Number(brMatch[1]));
+  }
+  const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s].*)?$/);
+  if (isoMatch) {
+    return makeIsoDate(Number(isoMatch[1]), Number(isoMatch[2]), Number(isoMatch[3]));
+  }
+  return '';
+}
+
+function makeIsoDate(year, month, day) {
+  if (year < 1900 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31) return '';
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return '';
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function normalizeOcrWord(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
+}
+
+function parseOcrTable(words) {
+  const validWords = words.filter(w => w.text && w.bbox);
+  const heights = validWords.map(w => Math.max(1, w.bbox.y1 - w.bbox.y0)).sort((a, b) => a - b);
+  const lineHeight = heights[Math.floor(heights.length / 2)] || 12;
+  const sortedWords = validWords.slice().sort((a, b) =>
+    ((a.bbox.y0 + a.bbox.y1) / 2) - ((b.bbox.y0 + b.bbox.y1) / 2) ||
+    a.bbox.x0 - b.bbox.x0
+  );
+  const lines = [];
+
+  sortedWords.forEach(word => {
+    const centerY = (word.bbox.y0 + word.bbox.y1) / 2;
+    let line = lines.find(candidate => Math.abs(candidate.centerY - centerY) <= lineHeight * 0.65);
+    if (!line) {
+      line = { centerY, words: [] };
+      lines.push(line);
+    }
+    line.words.push(word);
+    line.centerY = line.words.reduce((sum, item) => sum + (item.bbox.y0 + item.bbox.y1) / 2, 0) / line.words.length;
+  });
+  lines.forEach(line => line.words.sort((a, b) => a.bbox.x0 - b.bbox.x0));
+
+  const aliases = {
+    data: ['DATA'],
+    produto: ['PRODUTO', 'MODELO'],
+    qtde: ['QTDE', 'QUANTIDADE', 'QTD'],
+    motivo: ['MOTIVO'],
+    peca: ['PECA', 'PEA', 'COMPONENTE'],
+    obs: ['OBS', 'OBSERVACOES', 'OBSERVAES', 'OBSERVACAO']
+  };
+  const header = lines
+    .map(line => {
+      const tokens = line.words.map(word => normalizeOcrWord(word.text));
+      const score = Object.values(aliases).filter(names => tokens.some(token => names.includes(token))).length +
+        tokens.filter(token => token === 'SETOR').length;
+      return { line, tokens, score };
+    })
+    .filter(candidate => candidate.score >= 3)
+    .sort((a, b) => b.score - a.score)[0];
+
+  if (!header) return [];
+
+  const columns = [];
+  Object.keys(aliases).forEach(key => {
+    const word = header.line.words.find(item => aliases[key].includes(normalizeOcrWord(item.text)));
+    if (word) columns.push({ key, x: (word.bbox.x0 + word.bbox.x1) / 2 });
+  });
+  const setorWords = header.line.words.filter(word => normalizeOcrWord(word.text) === 'SETOR');
+  if (setorWords.length) columns.push({ key: 'setor', x: (setorWords[0].bbox.x0 + setorWords[0].bbox.x1) / 2 });
+  if (setorWords.length > 1) columns.push({ key: 'setorOcorrencia', x: (setorWords[1].bbox.x0 + setorWords[1].bbox.x1) / 2 });
+  columns.sort((a, b) => a.x - b.x);
+
+  const resultRows = [];
+  lines.filter(line => line.centerY > header.line.centerY + lineHeight).forEach(line => {
+    const row = { data: '', produto: '', qtde: '', setor: '', setorOcorrencia: '', motivo: '', peca: '', obs: '' };
+    line.words.forEach(word => {
+      const x = (word.bbox.x0 + word.bbox.x1) / 2;
+      const nearest = columns.reduce((best, col) =>
+        !best || Math.abs(col.x - x) < Math.abs(best.x - x) ? col : best, null);
+      const text = word.text.replace(/[|¦]/g, '').trim();
+      if (nearest && text) row[nearest.key] = `${row[nearest.key]} ${text}`.trim();
+    });
+    row.produto = row.produto.trim();
+    row.qtde = (row.qtde.match(/\d+/g) || []).join('');
+    const dateMatch = row.data.replace(/\s+/g, '').match(/(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/);
+    if (dateMatch) {
+      const year = dateMatch[3].length === 2 ? `20${dateMatch[3]}` : dateMatch[3];
+      row.data = makeIsoDate(Number(year), Number(dateMatch[2]), Number(dateMatch[1]));
+    } else {
+      row.data = '';
+    }
+    Object.keys(row).forEach(key => { row[key] = row[key].trim(); });
+    if (row.produto || row.qtde) resultRows.push(row);
+  });
+  return resultRows;
+}
+
+function escapeHtml(value) {
+  return String(value || '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[char]));
+}
+
+async function importPhoto(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  if (!window.Tesseract) {
+    alert('A biblioteca de OCR não foi carregada. Verifique a conexão e tente novamente.');
+    evt.target.value = '';
+    return;
+  }
+
+  const review = document.getElementById('ocr-review');
+  const status = document.getElementById('ocr-status');
+  review.style.display = 'block';
+  status.textContent = 'Lendo a foto no aparelho...';
+  document.getElementById('tbody-ocr-review').innerHTML = '';
+  window.scrollTo({ top: review.offsetTop, behavior: 'smooth' });
+
+  let worker;
+  try {
+    worker = await Tesseract.createWorker('por+eng', 1, {
+      logger: message => {
+        if (message.status === 'recognizing text' && message.progress) {
+          status.textContent = `Reconhecendo texto: ${Math.round(message.progress * 100)}%`;
+        }
+      }
+    });
+    await worker.setParameters({ tessedit_pageseg_mode: '4' });
+    const result = await worker.recognize(file);
+    ocrDraftRows = parseOcrTable(result.data.words || []);
+    if (!ocrDraftRows.length) {
+      status.textContent = 'Não consegui identificar linhas da tabela. Tente uma foto mais nítida, com os cabeçalhos visíveis.';
+      return;
+    }
+    renderOcrReview();
+    status.textContent = `${ocrDraftRows.length} linhas reconhecidas. Revise e corrija os campos antes de adicionar.`;
+  } catch (error) {
+    status.textContent = 'Não foi possível reconhecer a foto.';
+    alert(`Erro no OCR: ${error.message || error}`);
+  } finally {
+    if (worker) await worker.terminate();
+    evt.target.value = '';
+  }
+}
+
+function renderOcrReview() {
+  const fields = ['data', 'produto', 'qtde', 'setor', 'setorOcorrencia', 'motivo', 'peca', 'obs'];
+  document.getElementById('tbody-ocr-review').innerHTML = ocrDraftRows.map((row, index) => `
+    <tr>${fields.map(field => {
+      const type = field === 'data' ? 'date' : (field === 'qtde' ? 'number' : 'text');
+      const value = escapeHtml(row[field]);
+      return `<td><input type="${type}" data-ocr-row="${index}" data-ocr-field="${field}" value="${value}" ${field === 'qtde' ? 'min="1"' : ''} style="min-width:${field === 'produto' || field === 'obs' ? '180px' : '120px'}; padding:6px; border:1px solid var(--border); border-radius:4px;"></td>`;
+    }).join('')}</tr>
+  `).join('');
+}
+
+function acceptOcrRows() {
+  const inputs = document.querySelectorAll('[data-ocr-row][data-ocr-field]');
+  inputs.forEach(input => {
+    ocrDraftRows[Number(input.dataset.ocrRow)][input.dataset.ocrField] = input.value.trim();
+  });
+  const invalid = ocrDraftRows.findIndex(row => !row.data || !row.produto || !Number(row.qtde) || Number(row.qtde) < 1);
+  if (invalid !== -1) {
+    alert(`Revise a linha ${invalid + 1}: Data, Produto e Quantidade são obrigatórios.`);
+    return;
+  }
+
+  let nextId = state.records.length ? Math.max(...state.records.map(r => Number(r.id) || 0)) + 1 : 1;
+  const newRecords = ocrDraftRows.map(row => {
+    const uid = createUid();
+    const id = nextId++;
+    const record = {
+      id,
+      uid,
+      updatedAt: new Date().toISOString(),
+      launchNumber: getNextLaunchNumber(row.data),
+      launchKey: `photo-${uid}`,
+      launchItem: 1,
+      data: row.data,
+      produto: row.produto.toUpperCase(),
+      qtde: Number(row.qtde),
+      setor: row.setor.toUpperCase(),
+      setorOcorrencia: row.setorOcorrencia.toUpperCase(),
+      motivo: row.motivo.toUpperCase(),
+      peca: row.peca.toUpperCase(),
+      obs: row.obs.toUpperCase()
+    };
+    if (record.produto && !state.catalogos.produtos.includes(record.produto)) state.catalogos.produtos.push(record.produto);
+    [record.setor, record.setorOcorrencia].filter(Boolean).forEach(value => {
+      if (!state.catalogos.setores.includes(value)) state.catalogos.setores.push(value);
+    });
+    if (record.motivo && !state.catalogos.motivos.includes(record.motivo)) state.catalogos.motivos.push(record.motivo);
+    return record;
+  });
+  state.records = [...newRecords.reverse(), ...state.records];
+  renumberLaunchesByDate();
+  state.catalogos.produtos.sort();
+  state.catalogos.setores.sort();
+  state.catalogos.motivos.sort();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records));
+  localStorage.setItem(CAT_KEY, JSON.stringify(state.catalogos));
+  populateDropdowns();
+  cancelOcrReview();
+  renderAll();
+  alert(`${newRecords.length} registros adicionados após sua revisão.`);
+}
+
+function cancelOcrReview() {
+  ocrDraftRows = [];
+  document.getElementById('ocr-review').style.display = 'none';
+  document.getElementById('tbody-ocr-review').innerHTML = '';
+  document.getElementById('ocr-status').textContent = '';
+}
+
+function importExcel(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const mode = document.getElementById('import-mode') ? document.getElementById('import-mode').value : 'replace';
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'binary', cellDates: true });
+      const sheetName = wb.SheetNames.includes('Lançamentos') ? 'Lançamentos' : wb.SheetNames[0];
+      const json = XLSX.utils.sheet_to_json(wb.Sheets[sheetName]);
+      if (!json.length) {
+        alert('A planilha selecionada está vazia.');
+        evt.target.value = '';
+        return;
+      }
+
+      let nextId = (mode === 'append' && state.records.length)
+        ? Math.max(...state.records.map(r => r.id)) + 1
+        : 1;
+      const importBatchKey = `import-${Date.now()}-${nextId}`;
+
+      const parsedRows = json.map((row, index) => {
+        const norm = {};
+        Object.keys(row).forEach(k => {
+          norm[k.trim().toUpperCase()] = row[k];
+        });
+
+        const dtStr = parseExcelDate(norm['DATA']);
+        const launchNumber = Number(norm['LANÇAMENTO'] || norm['LANCAMENTO']) || nextId;
+        const launchItem = Number(norm['ITEM']) || 1;
+        const produto = String(norm['PRODUTO'] || norm['PRODUTO / MODELO'] || '').trim().toUpperCase();
+        const qtde = Number(norm['QTDE'] || norm['QUANTIDADE'] || 0);
+        const setor = String(norm['SETOR'] || norm['SETOR CAUSADOR'] || norm['SETOR RESPONSÁVEL'] || norm['SETOR RESPONSAVEL'] || '').trim().toUpperCase();
+        const setorOcorrencia = String(
+          norm['SETOR OCORRÊNCIA'] ||
+          norm['SETOR OCORRENCIA'] ||
+          norm['SETOR ONDE OCORREU'] ||
+          norm['LOCAL OCORRÊNCIA'] ||
+          norm['LOCAL OCORRENCIA'] ||
+          ''
+        ).trim().toUpperCase();
+        const motivo = String(norm['MOTIVO'] || '').trim().toUpperCase();
+        const peca = String(norm['PEÇA / COMPONENTE'] || norm['PECA / COMPONENTE'] || norm['PEÇA'] || norm['PECA'] || '').trim().toUpperCase();
+        const obs = String(norm['OBSERVAÇÕES'] || norm['OBSERVACOES'] || norm['OBS'] || '').trim().toUpperCase();
+
+        return {
+          id: nextId++,
+          uid: `${importBatchKey}-${index + 1}`,
+          updatedAt: new Date().toISOString(),
+          launchNumber,
+          launchKey: `${importBatchKey}-${launchNumber}`,
+          launchItem,
+          data: dtStr,
+          produto,
+          qtde,
+          setor,
+          setorOcorrencia,
+          motivo,
+          peca,
+          obs
+        };
+      });
+      const imported = parsedRows.filter(r => r.data && r.produto && r.qtde > 0);
+      const skipped = parsedRows.length - imported.length;
+
+      if (!imported.length) {
+        alert('Nenhum registro válido encontrado. Verifique se DATA, PRODUTO e QTDE estão preenchidos e válidos.');
+        evt.target.value = '';
+        return;
+      }
+
+      const actionText = mode === 'append'
+        ? `adicionar ${imported.length} registros à base atual`
+        : `substituir toda a base atual por ${imported.length} registros`;
+
+      if (confirm(`Foram encontrados ${imported.length} registros válidos${skipped ? `; ${skipped} linhas serão ignoradas por falta de DATA, PRODUTO ou QTDE válida` : ''}.\nDeseja ${actionText}?`)) {
+        imported.forEach(r => {
+          if (r.produto && !state.catalogos.produtos.includes(r.produto)) state.catalogos.produtos.push(r.produto);
+          if (r.setor && !state.catalogos.setores.includes(r.setor)) state.catalogos.setores.push(r.setor);
+          if (r.setorOcorrencia && !state.catalogos.setores.includes(r.setorOcorrencia)) state.catalogos.setores.push(r.setorOcorrencia);
+          if (r.motivo && !state.catalogos.motivos.includes(r.motivo)) state.catalogos.motivos.push(r.motivo);
+        });
+        state.catalogos.produtos.sort();
+        state.catalogos.setores.sort();
+        state.catalogos.motivos.sort();
+        localStorage.setItem(CAT_KEY, JSON.stringify(state.catalogos));
+
+        if (mode === 'append') {
+          state.records = [...imported.reverse(), ...state.records];
+        } else {
+          state.records = imported;
+        }
+
+        renumberLaunchesByDate();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records));
+        populateDropdowns();
+        updateLaunchNumberPreview();
+        renderAll();
+        alert(`Importação concluída com sucesso! (${imported.length} registros processados${skipped ? `; ${skipped} linhas ignoradas` : ''})`);
+      }
+    } catch (err) {
+      alert('Erro ao ler o arquivo Excel: ' + err.message);
+    }
+    evt.target.value = '';
+  };
+  reader.onerror = function() {
+    alert('Não foi possível ler a planilha selecionada.');
+    evt.target.value = '';
+  };
+  reader.readAsBinaryString(file);
+}
+
+async function exportBackup() {
+  const backup = {
+    format: 'controle-nc-backup',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    records: state.records,
+    deletedUids: Array.from(deletedRecordUids),
+    producao: state.producao,
+    catalogos: state.catalogos
+  };
+  const date = new Date().toISOString().slice(0, 10);
+  const filename = `Backup_Nao_Conformidades_${date}.json`;
+  const file = new File([JSON.stringify(backup, null, 2)], filename, { type: 'application/json' });
+  let shareError = null;
+  let canShareFile = false;
+  try {
+    canShareFile = typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] });
+  } catch (error) {
+    canShareFile = false;
+  }
+
+  if (canShareFile) {
+    try {
+      await navigator.share({ title: 'Backup de Não Conformidades', files: [file] });
+      return;
+    } catch (error) {
+      if (error.name === 'AbortError') return;
+      shareError = error;
+    }
+  }
+
+  const blob = new Blob([file], { type: 'application/json;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  if (shareError) {
+    alert(`O compartilhamento falhou. O arquivo foi baixado; salve-o no Drive manualmente.\n${shareError.message || shareError}`);
+  }
+}
+
+function getComparableRecord(record) {
+  return JSON.stringify({
+    data: record.data || '',
+    produto: record.produto || '',
+    qtde: Number(record.qtde) || 0,
+    setor: record.setor || '',
+    setorOcorrencia: record.setorOcorrencia || '',
+    motivo: record.motivo || '',
+    peca: record.peca || '',
+    obs: record.obs || '',
+    launchItem: Number(record.launchItem) || 1
+  });
+}
+
+function importBackup(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const backup = JSON.parse(e.target.result);
+      if (backup.format !== 'controle-nc-backup' || backup.version !== 1 || !Array.isArray(backup.records)) {
+        throw new Error('O arquivo não é um backup válido deste sistema.');
+      }
+
+      const localDeleted = new Set(deletedRecordUids);
+      const incomingDeleted = new Set(Array.isArray(backup.deletedUids) ? backup.deletedUids : []);
+      const recordsByUid = new Map(state.records.map(record => [record.uid || `legacy-${record.id}`, record]));
+      let nextId = state.records.reduce((max, record) => Math.max(max, Number(record.id) || 0), 0) + 1;
+      const additions = [];
+      const conflicts = [];
+      const deletedLocally = [];
+      const restoredFromBackup = [];
+      const incomingCatalogs = backup.catalogos || {};
+      const catalogChanges = ['produtos', 'setores', 'motivos'].filter(type =>
+        Array.isArray(incomingCatalogs[type]) &&
+        incomingCatalogs[type].some(item => !(state.catalogos[type] || []).includes(item))
+      );
+      const productionChanges = backup.producao && typeof backup.producao === 'object'
+        ? Object.keys(backup.producao).filter(month =>
+          (Number(state.producao[month]) || 0) !== (Number(backup.producao[month]) || 0)
+        )
+        : [];
+
+      backup.records.forEach((source, index) => {
+        if (!source || typeof source !== 'object') {
+          throw new Error(`O registro ${index + 1} do backup é inválido.`);
+        }
+        const incoming = {
+          ...source,
+          id: Number.isInteger(Number(source.id)) && Number(source.id) > 0 ? Number(source.id) : nextId++,
+          uid: String(source.uid || `legacy-${source.id || index + 1}`),
+          updatedAt: String(source.updatedAt || backup.exportedAt || ''),
+          launchNumber: Number(source.launchNumber) || Number(source.id) || 0,
+          launchItem: Number(source.launchItem) || 1,
+          data: String(source.data || ''),
+          produto: String(source.produto || ''),
+          qtde: Number(source.qtde) || 0,
+          setor: String(source.setor || ''),
+          setorOcorrencia: String(source.setorOcorrencia || ''),
+          motivo: String(source.motivo || ''),
+          peca: String(source.peca || ''),
+          obs: String(source.obs || ''),
+          launchKey: String(source.launchKey || `legacy-${source.launchNumber || source.id || index + 1}`)
+        };
+        if (incomingDeleted.has(incoming.uid)) return;
+        if (localDeleted.has(incoming.uid)) {
+          restoredFromBackup.push(incoming);
+          return;
+        }
+        const existing = recordsByUid.get(incoming.uid);
+        if (!existing) {
+          const idInUse = !Number.isInteger(Number(incoming.id)) ||
+            state.records.some(record => Number(record.id) === Number(incoming.id)) ||
+            additions.some(record => Number(record.id) === Number(incoming.id));
+          if (idInUse) incoming.id = nextId++;
+          additions.push(incoming);
+          recordsByUid.set(incoming.uid, incoming);
+        } else if (getComparableRecord(existing) !== getComparableRecord(incoming)) {
+          conflicts.push({ existing, incoming });
+        }
+      });
+
+      incomingDeleted.forEach(uid => {
+        if (recordsByUid.has(uid)) deletedLocally.push(uid);
+        else localDeleted.add(uid);
+      });
+
+      if (!additions.length && !conflicts.length && !deletedLocally.length && !restoredFromBackup.length &&
+          !catalogChanges.length && !productionChanges.length) {
+        alert('Este backup não contém registros novos ou alterações para mesclar.');
+        return;
+      }
+      if (!confirm(`O backup contém ${additions.length} novos registros, ${conflicts.length} alterações, ${deletedLocally.length} exclusões, ${restoredFromBackup.length} restaurações, ${catalogChanges.length} alterações em cadastros e ${productionChanges.length} alterações de produção. Deseja revisar e mesclar? Nenhum registro será substituído ou excluído sem sua confirmação.`)) return;
+
+      const merged = [...state.records];
+      additions.forEach(record => merged.push(record));
+      deletedLocally.forEach(uid => {
+        const record = merged.find(item => item.uid === uid);
+        const remove = confirm(
+          `O backup marca o lançamento #${record ? record.launchNumber || record.id : ''} como excluído. Excluir também desta base?`
+        );
+        if (remove) {
+          const index = merged.findIndex(item => item.uid === uid);
+          if (index !== -1) merged.splice(index, 1);
+          localDeleted.add(uid);
+        }
+      });
+      restoredFromBackup.forEach(incoming => {
+        const restore = confirm(
+          `O lançamento #${incoming.launchNumber || incoming.id} foi excluído nesta base, mas existe no backup. Restaurar a versão do backup?`
+        );
+        if (restore) {
+          localDeleted.delete(incoming.uid);
+          const idInUse = merged.some(record => Number(record.id) === Number(incoming.id));
+          if (idInUse) incoming.id = nextId++;
+          merged.push(incoming);
+        }
+      });
+      conflicts.forEach(({ existing, incoming }) => {
+        const useBackup = confirm(
+          `Conflito no lançamento #${incoming.launchNumber || incoming.id} (${incoming.produto || 'Produto não informado'}).\n\nOK: usar a versão do backup.\nCancelar: manter a versão atual.`
+        );
+        if (useBackup) {
+          const index = merged.findIndex(record => record.uid === existing.uid);
+          if (index !== -1) merged[index] = { ...incoming, id: existing.id, uid: existing.uid };
+        }
+      });
+      state.records = merged;
+      ['produtos', 'setores', 'motivos'].forEach(type => {
+        state.catalogos[type] = Array.from(new Set([
+          ...(state.catalogos[type] || []),
+          ...(Array.isArray(incomingCatalogs[type]) ? incomingCatalogs[type] : [])
+        ])).sort();
+      });
+      if (backup.producao && typeof backup.producao === 'object') {
+        Object.keys(backup.producao).forEach(month => {
+          const current = Number(state.producao[month]) || 0;
+          const incoming = Number(backup.producao[month]) || 0;
+          if (current === incoming) return;
+          if (current === 0 || confirm(`Conflito no volume de produção ${month}: atual ${current}, backup ${incoming}. Usar o valor do backup?`)) {
+            state.producao[month] = incoming;
+          }
+        });
+      }
+
+      renumberLaunchesByDate();
+      deletedRecordUids = localDeleted;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records));
+      localStorage.setItem(DELETED_KEY, JSON.stringify(Array.from(deletedRecordUids)));
+      localStorage.setItem(PROD_KEY, JSON.stringify(state.producao));
+      localStorage.setItem(CAT_KEY, JSON.stringify(state.catalogos));
+      populateDropdowns();
+      updateLaunchNumberPreview();
+      renderAll();
+      alert(`Mesclagem concluída. ${additions.length} novos registros foram adicionados; conflitos foram revisados.`);
+    } catch (error) {
+      alert(`Não foi possível restaurar o backup: ${error.message || error}`);
+    } finally {
+      evt.target.value = '';
+    }
+  };
+  reader.onerror = function() {
+    alert('Não foi possível ler o arquivo de backup selecionado.');
+    evt.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+const INITIAL_TEMPLATE_HTML = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+
+function exportSelfContainedHTML() {
+  const snapshot = {
+    records: state.records,
+    producao: state.producao,
+    catalogos: state.catalogos,
+    deletedUids: Array.from(deletedRecordUids)
+  };
+  const snapshotJson = JSON.stringify(snapshot)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026');
+  const reportStorageKey = `nc_producao_report_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const docHtml = INITIAL_TEMPLATE_HTML
+    .replace('<link rel="apple-touch-icon" href="./apple-touch-icon.png">', '')
+    .replace('<link rel="manifest" href="manifest.webmanifest">', '')
+    .replace("const STORAGE_KEY = 'nc_producao_app_v1';", `const STORAGE_KEY = '${reportStorageKey}';`)
+    .replace("const PROD_KEY = 'nc_app_producao_v1';", `const PROD_KEY = '${reportStorageKey}_production';`)
+    .replace("const CAT_KEY = 'nc_app_catalogos_v1';", `const CAT_KEY = '${reportStorageKey}_catalogs';`)
+    .replace("const DELETED_KEY = 'nc_app_deleted_v1';", `const DELETED_KEY = '${reportStorageKey}_deleted';`)
+    .replace(
+    /const EMBEDDED_SNAPSHOT = [\s\S]*?;\n\nfunction init\(\)/,
+    'const EMBEDDED_SNAPSHOT = ' + snapshotJson + ';\n\nfunction init()'
+  );
+  const blob = new Blob([docHtml], { type: 'text/html;charset=utf-8' });
+  const a = document.createElement('a');
+  const hoje = new Date().toISOString().slice(0, 10);
+  a.href = URL.createObjectURL(blob);
+  a.download = `Sistema_Nao_Conformidades_2026_${hoje}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+init();
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', event => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+});
+
+async function installApp() {
+  if (!deferredInstallPrompt) {
+    alert('Para instalar:\n• Android: abra no Chrome, toque no menu ⋮ e escolha "Instalar app" ou "Adicionar à tela inicial".\n• iPhone: abra no Safari, toque em Compartilhar e escolha "Adicionar à Tela de Início".');
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+}
+
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  navigator.serviceWorker.register('./sw.js').catch(error => {
+    console.error('Falha ao registrar o app para uso offline:', error);
+  });
+}
+</script></body></html>
