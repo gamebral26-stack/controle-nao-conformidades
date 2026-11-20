@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Controle NC</string>
+    <string name="title_activity_main">Controle NC</string>
+    <string name="package_name">com.gamebral26.controle.nc</string>
+    <string name="custom_url_scheme">com.gamebral26.controle.nc</string>
+</resources>

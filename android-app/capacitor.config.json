@@ -1,0 +1,8 @@
+{
+  "appId": "com.gamebral26.controle.nc",
+  "appName": "Controle NC",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}

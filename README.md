@@ -2,6 +2,12 @@
 
 App web instalável para celular e desktop, baseado no painel HTML existente.
 
+## Aplicativo Android
+
+Baixe o [código-fonte Android](./Controle-NC-Android-Source-v1.0.zip). Após extrair o arquivo, o projeto fica na pasta `android-app`; as instruções de build e privacidade estão em `android-app/README.md`. O APK funciona sem CDN: Excel, OCR em português/inglês e compartilhamento de arquivos estão empacotados no app.
+
+O APK de distribuição está em [Releases do GitHub](https://github.com/gamebral26-stack/controle-nao-conformidades/releases). O keystore de assinatura é local e nunca deve ser enviado ao repositório.
+
 ## Dados e privacidade
 
 - Lançamentos, produção, cadastros e exclusões ficam no armazenamento local do navegador.
@@ -34,7 +40,7 @@ Os dados não são enviados ao servidor da aplicação. Celular e computador man
 
 ### Publicar no GitHub Pages
 
-1. Crie um repositório público novo e envie para a raiz os arquivos do ZIP do app.
+1. Envie somente os arquivos do app web para a raiz do repositório público. O diretório `android-app` contém o projeto nativo e não altera a publicação do Pages na raiz.
 2. No repositório, abra **Settings > Pages**.
 3. Em **Build and deployment**, selecione **Deploy from a branch**, branch `main` e pasta `/(root)`.
 4. Quando o GitHub mostrar o endereço HTTPS, abra-o no celular para instalar.

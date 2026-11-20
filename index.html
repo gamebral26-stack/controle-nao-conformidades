@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <title>Controle de Não Conformidades — Produção 2026</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
   :root {
@@ -1855,7 +1855,26 @@ function saveProduction() {
   alert('Volumes de produção atualizados!');
 }
 
-function exportExcel() {
+async function saveOrShareFile(filename, blob, title) {
+  try {
+    if (window.NcNativeBridge && window.NcNativeBridge.isNative()) {
+      await window.NcNativeBridge.shareFile(filename, blob, title);
+      return;
+    }
+
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  } catch (error) {
+    alert(`Não foi possível salvar ou compartilhar o arquivo.\n${error.message || error}`);
+  }
+}
+
+async function exportExcel() {
   const rows = state.records.map(r => ({
     'LANÇAMENTO': r.launchNumber || r.id,
     'ITEM': r.launchItem || 1,
@@ -1872,10 +1891,13 @@ function exportExcel() {
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Lançamentos');
-  XLSX.writeFile(wb, 'Relatorio_Nao_Conformidades_2026_Exportado.xlsx');
+  const filename = 'Relatorio_Nao_Conformidades_2026_Exportado.xlsx';
+  const data = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  await saveOrShareFile(filename, blob, 'Exportar relatório Excel');
 }
 
-function downloadExcelTemplate() {
+async function downloadExcelTemplate() {
   const sample = [{
     'LANÇAMENTO': 1,
     'ITEM': 1,
@@ -1891,7 +1913,10 @@ function downloadExcelTemplate() {
   const ws = XLSX.utils.json_to_sheet(sample);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Lançamentos');
-  XLSX.writeFile(wb, 'Modelo_Importacao_Nao_Conformidades.xlsx');
+  const filename = 'Modelo_Importacao_Nao_Conformidades.xlsx';
+  const data = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  await saveOrShareFile(filename, blob, 'Compartilhar modelo Excel');
 }
 
 function parseExcelDate(val) {
@@ -2251,6 +2276,10 @@ async function exportBackup() {
   const date = new Date().toISOString().slice(0, 10);
   const filename = `Backup_Nao_Conformidades_${date}.json`;
   const file = new File([JSON.stringify(backup, null, 2)], filename, { type: 'application/json' });
+  if (window.NcNativeBridge && window.NcNativeBridge.isNative()) {
+    await saveOrShareFile(filename, file, 'Backup de Não Conformidades');
+    return;
+  }
   let shareError = null;
   let canShareFile = false;
   try {
@@ -2453,7 +2482,7 @@ function importBackup(evt) {
 
 const INITIAL_TEMPLATE_HTML = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
 
-function exportSelfContainedHTML() {
+async function exportSelfContainedHTML() {
   const snapshot = {
     records: state.records,
     producao: state.producao,
@@ -2477,14 +2506,12 @@ function exportSelfContainedHTML() {
     'const EMBEDDED_SNAPSHOT = ' + snapshotJson + ';\n\nfunction init()'
   );
   const blob = new Blob([docHtml], { type: 'text/html;charset=utf-8' });
-  const a = document.createElement('a');
   const hoje = new Date().toISOString().slice(0, 10);
-  a.href = URL.createObjectURL(blob);
-  a.download = `Sistema_Nao_Conformidades_2026_${hoje}.html`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  await saveOrShareFile(
+    `Sistema_Nao_Conformidades_2026_${hoje}.html`,
+    blob,
+    'Exportar cópia HTML'
+  );
 }
 
 init();
@@ -2495,6 +2522,10 @@ window.addEventListener('beforeinstallprompt', event => {
 });
 
 async function installApp() {
+  if (window.NcNativeBridge && window.NcNativeBridge.isNative()) {
+    alert('Este app já está instalado no aparelho.');
+    return;
+  }
   if (!deferredInstallPrompt) {
     alert('Para instalar:\n• Android: abra no Chrome, toque no menu ⋮ e escolha "Instalar app" ou "Adicionar à tela inicial".\n• iPhone: abra no Safari, toque em Compartilhar e escolha "Adicionar à Tela de Início".');
     return;

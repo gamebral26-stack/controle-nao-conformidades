@@ -1,0 +1,26 @@
+{
+  "name": "controle-nc-android",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Android wrapper for the Controle de Não Conformidades app",
+  "scripts": {
+    "copy:web": "node scripts/copy-web.cjs",
+    "cap:sync": "npm run copy:web && cap sync android",
+    "android:debug": "npm run cap:sync && android\\gradlew.bat -p android assembleDebug",
+    "android:release": "npm run cap:sync && powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-release.ps1"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/share": "^8.0.3",
+    "@tesseract.js-data/eng": "1.0.0",
+    "@tesseract.js-data/por": "1.0.0",
+    "chart.js": "4.4.1",
+    "tesseract.js": "5.1.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.6.2",
+    "esbuild": "^0.25.0"
+  }
+}
