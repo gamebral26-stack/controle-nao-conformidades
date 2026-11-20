@@ -4,9 +4,9 @@ App web instalável para celular e desktop, baseado no painel HTML existente.
 
 ## Aplicativo Android
 
-Baixe o [código-fonte Android](./Controle-NC-Android-Source-v1.0.zip). Após extrair o arquivo, o projeto fica na pasta `android-app`; as instruções de build e privacidade estão em `android-app/README.md`. O APK funciona sem CDN: Excel, OCR em português/inglês e compartilhamento de arquivos estão empacotados no app.
+O [projeto Android](./android-app/) inclui o código e as instruções de build/privacidade. O APK funciona sem CDN: Excel, OCR em português/inglês e compartilhamento de arquivos estão empacotados no app.
 
-O APK de distribuição está em [Releases do GitHub](https://github.com/gamebral26-stack/controle-nao-conformidades/releases). O keystore de assinatura é local e nunca deve ser enviado ao repositório.
+Baixe o [APK assinado v1.0](./releases/Controle-NC-v1.0.apk). O keystore de assinatura é local e nunca deve ser enviado ao repositório.
 
 ## Dados e privacidade
 
