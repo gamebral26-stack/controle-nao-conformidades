@@ -61,6 +61,9 @@ try {
     New-Item -ItemType Directory -Path $distPath -Force | Out-Null
     $signedApk = Join-Path $distPath 'Controle-NC-v1.0.apk'
     $apksigner = Join-Path $androidSdk 'build-tools\36.0.0\apksigner.bat'
+    if (Test-Path -LiteralPath $signedApk) {
+        Remove-Item -LiteralPath $signedApk -Force
+    }
     & $apksigner sign --ks $keyStorePath --ks-key-alias $env:NC_KEY_ALIAS --ks-pass env:NC_KEYSTORE_PASSWORD --key-pass env:NC_KEY_PASSWORD --out $signedApk $unsignedApk
     if ($LASTEXITCODE -ne 0) {
         throw "APK signing failed ($LASTEXITCODE)."
